@@ -26,29 +26,42 @@ var qualitrix = new Db(connectionParams.qualitrix.database
 	, new Server(
 		connectionParams.qualitrix.host, connectionParams.qualitrix.port));
 
+var queries = {
+	eregister : {
+		profile : 'SELECT r.cod_roll AS id, r.nom_roll AS name, r.descripcion AS description FROM roll AS r'
+	}	
+};
+
 startProcess();
 
 function startProcess(){
 	console.log('Iniciando ejecución');
-	openQualitrixConnection(function(db){
+	openQualitrixConnection(function(qxdb){
 		openEregisterConnection(function(error){
 			if(error){
-				closeQualitrixConnection(db, endProcess);
+				closeQualitrixConnection(qxdb, endProcess);
 			}else
-			populateQualitrixToken(db, function(error){
+			populateQualitrixToken(qxdb, function(error){
 				if(error){
 					closeEregisterConnection(function(){
-						closeQualitrixConnection(db, endProcess);
+						closeQualitrixConnection(qxdb, endProcess);
 					});
 				}else
-				populateQualitrixSubsidiary(db, function(error){
+				populateQualitrixSubsidiary(qxdb, function(error){
 					if(error){
 						closeEregisterConnection(function(){
-							closeQualitrixConnection(db, endProcess);
+							closeQualitrixConnection(qxdb, endProcess);
 						});
 					}else
-					closeEregisterConnection(function(){
-						closeQualitrixConnection(db, endProcess);
+					populateQualitrixProfile(qxdb, function(error){
+						if(error){
+							closeEregisterConnection(function(){
+								closeQualitrixConnection(qxdb, endProcess);
+							});
+						}else
+						closeEregisterConnection(function(){
+							closeQualitrixConnection(qxdb, endProcess);
+						});
 					});
 				});
 			});
@@ -63,21 +76,21 @@ function endProcess(){
 
 function openQualitrixConnection(cb){
 	console.log('Conectando a Qualitrix...');
-	qualitrix.open(function(err, db) {
+	qualitrix.open(function(err, qxdb) {
 		if(err){
 			console.log('...No ha sido posible conectar Qualitrix, terminando ejecución');
 			process.exit(1);
 		}else{
 			console.log('...Conectado con Qualitrix');
-			cb(db);
+			cb(qxdb);
 		}
 	});
 }
 
-function closeQualitrixConnection(db, cb){
+function closeQualitrixConnection(qxdb, cb){
 	console.log('Desconectando de Qualitrix...');
 	setTimeout(function(){
-		db.close(function(error){
+		qxdb.close(function(error){
 			console.log('...Desconectando exitosamente de Qualitrix');
 			cb();
 		});
@@ -106,11 +119,11 @@ function closeEregisterConnection(cb){
 	},1000);
 }
 
-function populateQualitrixToken(db, cb){
-	db.collection('subsidiary').drop(function(error){
+function populateQualitrixToken(qxdb, cb){
+	qxdb.collection('subsidiary').drop(function(error){
 		console.log('  Insertando en tabla token...');
-		db.collection('token').insert({
-			id: db.collection('token').count()
+		qxdb.collection('token').insert({
+			id: qxdb.collection('token').count()
 	        , token: '=='
 	        , user: 0
 	        , iat: (new Date()).getTime()-3600
@@ -132,10 +145,10 @@ function populateQualitrixToken(db, cb){
     });
 }
 
-function populateQualitrixSubsidiary(db, cb){
-	db.collection('subsidiary').drop(function(error){
+function populateQualitrixSubsidiary(qxdb, cb){
+	qxdb.collection('subsidiary').drop(function(error){
 		console.log('  Insertando en tabla subsidiary...');
-		db.collection('subsidiary').insert({
+		qxdb.collection('subsidiary').insert({
 	        id: 1
 	        , name: 'Barranquilla'
 	        , reference: '3'
@@ -157,31 +170,46 @@ function populateQualitrixSubsidiary(db, cb){
 	});
 }
 
-function populateQualitrixProfile(db, cb){
-	
-	/*
-	db.collection('profile').drop(function(error){
-		console.log('  Insertando en tabla profile...');
-		db.collection('profile').insert({
-	        id: 1
-	        , name: 'Barranquilla'
-	        , reference: '3'
-	        , active: true
-	        , created: (new Date()).getTime()
-	        , creator: 0
-	        , modified: (new Date()).getTime()
-	        , modifier: 0
-	        , deleted: false
-	        , deleter: false
-	    }, function(error, doc){
-	    	if(error){
-	    		console.log('  ...Error insertando en tabla profile');
-	    		cb(error);
-	    	}else{
-	    		console.log('  ...Tabla profile poblada exitosamente');
-	    		cb();
-	    	}
-	    });
-	});
-	*/
+function populateQualitrixProfile(qxdb, cb){
+	console.log('  Insertando en tabla profile...');
+	console.log('    Consultando datos de e-Register...');
+	eregister.query(queries.eregister.profile
+		, function(error, results, fields){
+			if(error){
+				console.log('    ...No se han podido obtener datos de e-Register');
+				cb(error);
+			}
+			else{
+				console.log('    ...Se han obtenido '+results.length+' registros de e-Register');
+				var items = [];
+				for(var i = 0; i < results.length;i++){
+					var result = results[i];
+					items.push({
+						id: result.id
+						, name: result.name
+						, description: result.description
+						, active: true
+						, created: (new Date()).getTime()
+				        , creator: 0
+				        , modified: (new Date()).getTime()
+				        , modifier: 0
+				        , deleted: false
+				        , deleter: false
+					});
+				}
+				console.log('    ...Insertando datos en Qualitrix');
+				qxdb.collection('profile').drop(function(error){
+					qxdb.collection('profile').insert(items, function(error, doc){
+				    	if(error){
+				    		console.log('    ...Error insertando en tabla profile');
+				    		cb(error);
+				    	}else{
+				    		console.log('    ...Tabla profile poblada exitosamente');
+				    		cb();
+				    	}
+				    });
+				});
+			}
+		}
+	);
 }
