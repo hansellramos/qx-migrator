@@ -29,6 +29,7 @@ var qualitrix = new Db(connectionParams.qualitrix.database
 var queries = {
 	eregister : {
 		profile : 'SELECT r.cod_roll AS id, r.nom_roll AS name, r.descripcion AS description FROM roll AS r'
+		, user : 'SELECT u.cod_usuario AS id, u.cod_roll AS profile, u.usuario AS username, u.pass AS password, u.nom_usuario AS firstname, TRIM(CONCAT(u.apellido1, " ",u.apellido2)) AS lastname, u.habil AS active FROM usuario AS u'
 	}	
 };
 
@@ -59,8 +60,15 @@ function startProcess(){
 								closeQualitrixConnection(qxdb, endProcess);
 							});
 						}else
-						closeEregisterConnection(function(){
-							closeQualitrixConnection(qxdb, endProcess);
+						populateQualitrixUser(qxdb, function(error){
+							if(error){
+								closeEregisterConnection(function(){
+									closeQualitrixConnection(qxdb, endProcess);
+								});
+							}else
+							closeEregisterConnection(function(){
+								closeQualitrixConnection(qxdb, endProcess);
+							});
 						});
 					});
 				});
@@ -172,7 +180,7 @@ function populateQualitrixSubsidiary(qxdb, cb){
 
 function populateQualitrixProfile(qxdb, cb){
 	console.log('  Insertando en tabla profile...');
-	console.log('    Consultando datos de e-Register...');
+	console.log('    Consultando datos de table roll en e-Register...');
 	eregister.query(queries.eregister.profile
 		, function(error, results, fields){
 			if(error){
@@ -205,6 +213,53 @@ function populateQualitrixProfile(qxdb, cb){
 				    		cb(error);
 				    	}else{
 				    		console.log('    ...Tabla profile poblada exitosamente');
+				    		cb();
+				    	}
+				    });
+				});
+			}
+		}
+	);
+}
+
+function populateQualitrixUser(qxdb, cb){
+	console.log('  Insertando en tabla user...');
+	console.log('    Consultando datos de table usuarios en e-Register...');
+	eregister.query(queries.eregister.user
+		, function(error, results, fields){
+			if(error){
+				console.log('    ...No se han podido obtener datos de e-Register');
+				cb(error);
+			}
+			else{
+				console.log('    ...Se han obtenido '+results.length+' registros de e-Register');
+				var items = [];
+				for(var i = 0; i < results.length;i++){
+					var result = results[i];
+					items.push({
+						id: result.id
+						, profile: result.profile
+						, username: result.username
+						, password: result.password
+						, firstname: result.firstname
+						, lastname: result.lastname
+						, active: result.active == 1
+						, created: (new Date()).getTime()
+				        , creator: 0
+				        , modified: (new Date()).getTime()
+				        , modifier: 0
+				        , deleted: false
+				        , deleter: false
+					});
+				}
+				console.log('    ...Insertando datos en Qualitrix');
+				qxdb.collection('user').drop(function(error){
+					qxdb.collection('user').insert(items, function(error, doc){
+				    	if(error){
+				    		console.log('    ...Error insertando en tabla user');
+				    		cb(error);
+				    	}else{
+				    		console.log('    ...Tabla user poblada exitosamente');
 				    		cb();
 				    	}
 				    });
