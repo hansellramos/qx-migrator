@@ -1,0 +1,19 @@
+{
+  "name": "qx-migrator",
+  "version": "0.0.0",
+  "description": "Migrator to retrieve data from eregister to Qualitrix",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hansellramos/qx-migrator.git"
+  },
+  "author": "Hansel Ramos",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hansellramos/qx-migrator/issues"
+  },
+  "homepage": "https://github.com/hansellramos/qx-migrator#readme"
+}
