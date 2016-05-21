@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/hansellramos/qx-migrator/issues"
   },
-  "homepage": "https://github.com/hansellramos/qx-migrator#readme"
+  "homepage": "https://github.com/hansellramos/qx-migrator#readme",
+  "dependencies": {
+    "mongodb": "^2.1.19",
+    "mysql": "^2.10.2"
+  }
 }
