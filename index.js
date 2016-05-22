@@ -128,7 +128,7 @@ function closeEregisterConnection(cb){
 }
 
 function populateQualitrixToken(qxdb, cb){
-	qxdb.collection('subsidiary').drop(function(error){
+	qxdb.collection('token').drop(function(error){
 		console.log('  Insertando en tabla token...');
 		qxdb.collection('token').insert({
 			id: qxdb.collection('token').count()
