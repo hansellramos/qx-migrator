@@ -140,8 +140,8 @@ function populateQualitrixToken(qxdb, cb){
 	        , creator: 0
 	        , modified: (new Date()).getTime()
 	        , modifier: 0
-	        , deleted: 0
-	        , deleter: 0
+	        , deleted: false
+	        , deleter: false
 		}, function(error, doc){
 	    	if(error){
 	    		console.log('  ...Error insertando en tabla token');
