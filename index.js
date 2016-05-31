@@ -31,6 +31,8 @@ var queries = {
 		profile : 'SELECT r.cod_roll AS id, r.nom_roll AS name, r.descripcion AS description FROM roll AS r'
 		, user : 'SELECT u.cod_usuario AS id, u.cod_roll AS profile, u.usuario AS username, u.pass AS password, u.nom_usuario AS firstname, TRIM(CONCAT(u.apellido1, " ",u.apellido2)) AS lastname, u.habil AS active FROM usuario AS u'
 		, store: 'SELECT c.cod_categoria id, c.nom_categoria name, c.cod_categoria_ext reference, c.habil active FROM categorias c'
+		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p LIMIT 2'
+		, property: 'SELECT c.cod_caracteristica id, c.nom_caracteristica name FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica WHERE dp.cod_producto = ?'
 	}	
 };
 
@@ -73,8 +75,15 @@ function startProcess(){
 										closeQualitrixConnection(qxdb, endProcess);
 									});
 								}else
-								closeEregisterConnection(function(){
-									closeQualitrixConnection(qxdb, endProcess);
+								populateQualitrixProducts(qxdb, function(error){
+									if(error){
+										closeEregisterConnection(function(){
+											closeQualitrixConnection(qxdb, endProcess);
+										});
+									}else
+									closeEregisterConnection(function(){
+										closeQualitrixConnection(qxdb, endProcess);
+									});
 								});
 							});
 						});
@@ -326,4 +335,75 @@ function populateQualitrixStore(qxdb, cb){
 			);
 		}
 	});
+}
+
+function populateQualitrixProducts(qxdb, cb){
+	console.log('    Consultando datos de table productos en e-Register...');
+	eregister.query(queries.eregister.product
+		, function(error, results, fields){
+			if(error){
+				console.log('    ...No se han podido obtener datos de e-Register');
+				cb(error);
+			}
+			else{
+				console.log('    ...Se han obtenido '+results.length+' registros de e-Register');
+				var items = [];						
+				for(var i = 0; i < results.length;i++){
+					var result = results[i];
+					console.log('      Consultando propiedades del producto '+result.name+' en e-Register...');
+					eregister.query(queries.eregister.property, [result.id]
+					, function(error, properties, fields){
+						if(error){
+							console.log('      ...No se han podido obtener datos de e-Register');
+							cb(error);
+						}
+						else{
+							console.log('      ...Se han obtenido '+properties.length+' propiedades de e-Register para el producto '+result.name);
+							var p = [];
+							for(var j = 0; j < properties.length;j++){
+								var property = properties[j];
+								p.push({
+									id:property.id
+									, name:property.name
+									, active: true
+									, created: (new Date()).getTime()
+									, creator: 0
+									, modified: (new Date()).getTime()
+									, modifier: 0
+									, deleted: false
+									, deleter: false
+								});
+							}
+							items.push({
+								id: result.id
+								, store: result.store
+								, name: result.name
+								, reference: result.reference
+								, properties: p
+								, active: result.active == 1
+								, created: (new Date()).getTime()
+								, creator: 0
+								, modified: (new Date()).getTime()
+								, modifier: 0
+								, deleted: false
+								, deleter: false
+							});
+							console.log('    ...Insertando datos en Qualitrix');
+							qxdb.collection('product').drop(function(error){
+								qxdb.collection('product').insert(items, function(error, doc){
+									if(error){
+										console.log('    ...Error insertando en tabla product');
+										cb(error);
+									}else{
+										console.log('    ...Tabla product poblada exitosamente');
+										cb();
+									}
+								});
+							});
+						}
+					});
+				}
+			}
+		}
+	);
 }
