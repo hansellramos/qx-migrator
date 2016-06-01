@@ -570,7 +570,7 @@ function populateQualitrixRecords(qxdb, cb){
 								, remission: record.remission
 								, quantity: record.quantity
 								, existing_quantity: record.existing_quantity
-								, supplier: record.supplier
+								, supplier: record.supplier+1000
 								, satisfies: record.satisfies == 1
 								, active: record.active == 1
 								, clause: ''
