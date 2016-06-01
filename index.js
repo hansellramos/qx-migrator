@@ -33,6 +33,7 @@ var queries = {
 		, store: 'SELECT c.cod_categoria id, c.nom_categoria name, c.cod_categoria_ext reference, c.habil active FROM categorias c'
 		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p'
 		, property: 'SELECT c.cod_caracteristica id, c.nom_caracteristica name, dp.cod_producto product FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica ORDER BY dp.cod_producto'
+		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 	}	
 };
 
@@ -75,14 +76,21 @@ function startProcess(){
 										closeQualitrixConnection(qxdb, endProcess);
 									});
 								}else
-								populateQualitrixProducts(qxdb, function(error){
+								populateQualitrixExternal(qxdb, function(error){
 									if(error){
 										closeEregisterConnection(function(){
 											closeQualitrixConnection(qxdb, endProcess);
 										});
 									}else
-									closeEregisterConnection(function(){
-										closeQualitrixConnection(qxdb, endProcess);
+									populateQualitrixProducts(qxdb, function(error){
+										if(error){
+											closeEregisterConnection(function(){
+												closeQualitrixConnection(qxdb, endProcess);
+											});
+										}else
+										closeEregisterConnection(function(){
+											closeQualitrixConnection(qxdb, endProcess);
+										});
 									});
 								});
 							});
@@ -309,6 +317,9 @@ function populateQualitrixStore(qxdb, cb){
 								, subsidiary: subsidiary.id
 								, name: result.name
 								, reference: result.reference
+								, address: ''
+								, phone: ''
+								, notes: ''
 								, active: result.active == 1
 								, created: (new Date()).getTime()
 								, creator: 0
@@ -335,6 +346,53 @@ function populateQualitrixStore(qxdb, cb){
 			);
 		}
 	});
+}
+
+function populateQualitrixExternal(qxdb, cb){
+	console.log('    Consultando datos de table clientes y proveedores en e-Register...');
+	eregister.query(queries.eregister.external
+		, function(error, results, fields){
+			if(error){
+				console.log('    ...No se han podido obtener datos de e-Register');
+				cb(error);
+			}
+			else{
+				console.log('    ...Se han obtenido '+results.length+' registros de e-Register');
+				var items = [];						
+				for(var i = 0; i < results.length;i++){
+					var result = results[i];
+					items.push({
+						id: result.id
+						, name: result.name
+						, address: ''
+						, phone: ''
+						, notes: ''
+						, contact: ''
+						, active: true == 1
+						, created: (new Date()).getTime()
+						, creator: 0
+						, modified: (new Date()).getTime()
+						, modifier: 0
+						, deleted: false
+						, deleter: false
+					});
+				}
+				console.log('    ...Insertando datos en Qualitrix');
+				qxdb.collection('external').drop(function(error){
+					qxdb.collection('external').insert(items, function(error, doc){
+						if(error){
+							console.log('    ...Error insertando en tabla external');
+							cb(error);
+						}else{
+							console.log('    ...Tabla external poblada exitosamente');
+							cb();
+						}
+					});
+				});
+			}
+		}
+	);
+
 }
 
 function populateQualitrixProducts(qxdb, cb){
@@ -385,6 +443,7 @@ function populateQualitrixProducts(qxdb, cb){
 								, store: product.store
 								, name: product.name
 								, reference: product.reference
+								, notes: ''
 								, properties: _properties
 								, active: product.active == 1
 								, created: (new Date()).getTime()
