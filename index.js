@@ -31,8 +31,8 @@ var queries = {
 		profile : 'SELECT r.cod_roll AS id, r.nom_roll AS name, r.descripcion AS description FROM roll AS r'
 		, user : 'SELECT u.cod_usuario AS id, u.cod_roll AS profile, u.usuario AS username, u.pass AS password, u.nom_usuario AS firstname, TRIM(CONCAT(u.apellido1, " ",u.apellido2)) AS lastname, u.habil AS active FROM usuario AS u'
 		, store: 'SELECT c.cod_categoria id, c.nom_categoria name, c.cod_categoria_ext reference, c.habil active FROM categorias c'
-		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p LIMIT 2'
-		, property: 'SELECT c.cod_caracteristica id, c.nom_caracteristica name FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica WHERE dp.cod_producto = ?'
+		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p'
+		, property: 'SELECT c.cod_caracteristica id, c.nom_caracteristica name, dp.cod_producto product FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica ORDER BY dp.cod_producto'
 	}	
 };
 
@@ -340,47 +340,53 @@ function populateQualitrixStore(qxdb, cb){
 function populateQualitrixProducts(qxdb, cb){
 	console.log('    Consultando datos de table productos en e-Register...');
 	eregister.query(queries.eregister.product
-		, function(error, results, fields){
+		, function(error, products, fields){
 			if(error){
 				console.log('    ...No se han podido obtener datos de e-Register');
 				cb(error);
 			}
 			else{
-				console.log('    ...Se han obtenido '+results.length+' registros de e-Register');
-				var items = [];						
-				for(var i = 0; i < results.length;i++){
-					var result = results[i];
-					console.log('      Consultando propiedades del producto '+result.name+' en e-Register...');
-					eregister.query(queries.eregister.property, [result.id]
-					, function(error, properties, fields){
-						if(error){
-							console.log('      ...No se han podido obtener datos de e-Register');
-							cb(error);
-						}
-						else{
-							console.log('      ...Se han obtenido '+properties.length+' propiedades de e-Register para el producto '+result.name);
-							var p = [];
-							for(var j = 0; j < properties.length;j++){
+				console.log('    ...Se han obtenido '+products.length+' registros de e-Register');
+				console.log('      Consultando propiedades en e-Register...');
+				eregister.query(queries.eregister.property
+				, function(error, properties, fields){
+					if(error){
+						console.log('      ...No se han podido obtener datos de e-Register');
+						cb(error);
+					}
+					else{
+						console.log('      ...Se han obtenido '+properties.length+' propiedades de e-Register');
+						var items = [];
+						for(var i = 0; i < products.length; i++){
+							var product = products[i];
+							var _properties = [];
+							for(var j = 0; j < properties.length; j++){
 								var property = properties[j];
-								p.push({
-									id:property.id
-									, name:property.name
-									, active: true
-									, created: (new Date()).getTime()
-									, creator: 0
-									, modified: (new Date()).getTime()
-									, modifier: 0
-									, deleted: false
-									, deleter: false
-								});
+								if(product.id == property.product){
+									_properties.push({
+										id:property.id
+										, name:property.name
+										, validations:{
+											type:'text'
+										}
+										, active: true
+										, created: (new Date()).getTime()
+										, creator: 0
+										, modified: (new Date()).getTime()
+										, modifier: 0
+										, deleted: false
+										, deleter: false
+									});
+								}
 							}
+							console.log('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el producto '+product.name);
 							items.push({
-								id: result.id
-								, store: result.store
-								, name: result.name
-								, reference: result.reference
-								, properties: p
-								, active: result.active == 1
+								id: product.id
+								, store: product.store
+								, name: product.name
+								, reference: product.reference
+								, properties: _properties
+								, active: product.active == 1
 								, created: (new Date()).getTime()
 								, creator: 0
 								, modified: (new Date()).getTime()
@@ -388,21 +394,21 @@ function populateQualitrixProducts(qxdb, cb){
 								, deleted: false
 								, deleter: false
 							});
-							console.log('    ...Insertando datos en Qualitrix');
-							qxdb.collection('product').drop(function(error){
-								qxdb.collection('product').insert(items, function(error, doc){
-									if(error){
-										console.log('    ...Error insertando en tabla product');
-										cb(error);
-									}else{
-										console.log('    ...Tabla product poblada exitosamente');
-										cb();
-									}
-								});
-							});
 						}
-					});
-				}
+						console.log('    ...Insertando datos en Qualitrix');
+						qxdb.collection('product').drop(function(error){
+							qxdb.collection('product').insert(items, function(error, doc){
+								if(error){
+									console.log('    ...Error insertando en tabla product');
+									cb(error);
+								}else{
+									console.log('    ...Tabla product poblada exitosamente');
+									cb();
+								}
+							});
+						});
+					}
+				});
 			}
 		}
 	);
