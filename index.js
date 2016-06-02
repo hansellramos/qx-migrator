@@ -38,6 +38,7 @@ var queries = {
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
+		, certificate: 'SELECT cod_certificado id, cod_producto product, cod_usuario `user`, STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i") `date`, remision remission, clausula clause FROM certificado'
 	}	
 };
 
@@ -109,14 +110,21 @@ function startProcess(){
 												closeQualitrixConnection(qxdb, endProcess);
 											});
 										}else
-										populateQualitrixRecords(qxdb, function(error){
+										populateQualitrixCertificate(qxdb, function(error){
 											if(error){
 												closeEregisterConnection(function(){
 													closeQualitrixConnection(qxdb, endProcess);
 												});
 											}else
-											closeEregisterConnection(function(){
-												closeQualitrixConnection(qxdb, endProcess);
+											populateQualitrixRecords(qxdb, function(error){
+												if(error){
+													closeEregisterConnection(function(){
+														closeQualitrixConnection(qxdb, endProcess);
+													});
+												}else
+												closeEregisterConnection(function(){
+													closeQualitrixConnection(qxdb, endProcess);
+												});
 											});
 										});
 									});
@@ -598,6 +606,87 @@ function populateQualitrixRecords(qxdb, cb){
 						});
 					}
 				});
+			}
+		}
+	);
+}
+
+function populateQualitrixCertificate(qxdb, cb){
+	console.log(addToLog('  Iniciando Proceso certificate...'));
+	console.log(addToLog('    Consultando datos de table certificado en e-Register...'));
+	eregister.query(queries.eregister.certificate
+		, function(error, certificates, fields){
+			if(error){
+				console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+				writeLog(function(){cb(error);});
+			}
+			else{
+				console.log(addToLog('    ...Se han obtenido '+certificates.length+' registros de e-Register'));
+				/*console.log(addToLog('      Consultando propiedades en e-Register...'));
+				eregister.query(queries.eregister.record_detail
+				, function(error, properties, fields){
+					if(error){
+						console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
+						writeLog(function(){cb(error);});
+					}
+					else{*/
+						/*console.log(addToLog('      ...Se han obtenido '+properties.length+' propiedades de e-Register'));
+						console.log(addToLog('      Relacionando registros con propiedades...'));
+						writeLog();*/
+						var items = [];
+						for(var i = 0; i < certificates.length; i++){
+							var item = certificates[i];
+							/*var _properties = [];
+							for(var j = 0; j < properties.length; j++){
+								var property = properties[j];
+								if(item.id == property.record){
+									_properties.push({
+										  property: property.property
+										, value: property.value
+										, creator: item.user
+										, modified: item.created
+										, modified: (new Date()).getTime()
+										, modifier: 0
+										, deleted: false
+										, deleter: false
+									});
+								}
+							}
+							addToLog('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el certificado '+item.id);*/
+							items.push({
+								id: item.id
+								, product: item.product
+								, customer: item.customer
+								, quantity: item.quantity
+								, presentation: item.presentation
+								, remission: item.remission
+								, date: item.date
+								, active: 1
+								, clause: item.clause
+								, created: item.date
+								, creator: item.user
+								, modified: item.date
+								, modifier: 0
+								, deleted: false
+								, deleter: false
+							});
+						}
+						//console.log(addToLog('      ...Relacion finalizada'));
+						//writeLog();
+						console.log(addToLog('    Insertando datos en Qualitrix...'));
+						qxdb.collection('certificate').drop(function(error){
+							qxdb.collection('certificate').insert(items, function(error, doc){
+								if(error){
+									console.log(addToLog('    ...Error insertando en tabla certificate'));
+								}else{
+									console.log(addToLog('    ...Tabla certificate poblada exitosamente'));
+								}
+								console.log(addToLog('  Proceso certificate finalizado...'));
+								writeLog(function(){cb(error);});
+							});
+						});
+					//}
+				//});
 			}
 		}
 	);
