@@ -36,9 +36,10 @@ var queries = {
 		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p'
 		, property: 'SELECT c.cod_caracteristica id, replace(c.nom_caracteristica,"\r","") name, dp.cod_producto product FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica ORDER BY dp.cod_producto'
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
-		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
+		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
 		, certificate: 'SELECT cod_certificado id, cod_producto product, cod_usuario `user`, STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i") `date`, remision remission, clausula clause FROM certificado'
+		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
 	}	
 };
 
@@ -622,27 +623,27 @@ function populateQualitrixCertificate(qxdb, cb){
 			}
 			else{
 				console.log(addToLog('    ...Se han obtenido '+certificates.length+' registros de e-Register'));
-				/*console.log(addToLog('      Consultando propiedades en e-Register...'));
-				eregister.query(queries.eregister.record_detail
+				console.log(addToLog('      Consultando propiedades en e-Register...'));
+				eregister.query(queries.eregister.certificate_properties
 				, function(error, properties, fields){
 					if(error){
 						console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
 						writeLog(function(){cb(error);});
 					}
-					else{*/
-						/*console.log(addToLog('      ...Se han obtenido '+properties.length+' propiedades de e-Register'));
-						console.log(addToLog('      Relacionando registros con propiedades...'));
-						writeLog();*/
+					else{
+						console.log(addToLog('      ...Se han obtenido '+properties.length+' propiedades de e-Register'));
+						console.log(addToLog('      Relacionando certificados con propiedades...'));
+						writeLog();
 						var items = [];
 						for(var i = 0; i < certificates.length; i++){
 							var item = certificates[i];
-							/*var _properties = [];
+							var _properties = [];
 							for(var j = 0; j < properties.length; j++){
 								var property = properties[j];
-								if(item.id == property.record){
+								if(item.id == property.certificate){
 									_properties.push({
-										  property: property.property
-										, value: property.value
+										  property: property.id
+										, name: property.name
 										, creator: item.user
 										, modified: item.created
 										, modified: (new Date()).getTime()
@@ -652,7 +653,7 @@ function populateQualitrixCertificate(qxdb, cb){
 									});
 								}
 							}
-							addToLog('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el certificado '+item.id);*/
+							addToLog('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el certificado '+item.id);
 							items.push({
 								id: item.id
 								, product: item.product
@@ -663,6 +664,7 @@ function populateQualitrixCertificate(qxdb, cb){
 								, date: item.date
 								, active: 1
 								, clause: item.clause
+								, properties: _properties
 								, created: item.date
 								, creator: item.user
 								, modified: item.date
@@ -671,8 +673,8 @@ function populateQualitrixCertificate(qxdb, cb){
 								, deleter: false
 							});
 						}
-						//console.log(addToLog('      ...Relacion finalizada'));
-						//writeLog();
+						console.log(addToLog('      ...Relacion finalizada'));
+						writeLog();
 						console.log(addToLog('    Insertando datos en Qualitrix...'));
 						qxdb.collection('certificate').drop(function(error){
 							qxdb.collection('certificate').insert(items, function(error, doc){
@@ -685,8 +687,8 @@ function populateQualitrixCertificate(qxdb, cb){
 								writeLog(function(){cb(error);});
 							});
 						});
-					//}
-				//});
+					}
+				});
 			}
 		}
 	);
