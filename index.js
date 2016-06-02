@@ -34,7 +34,7 @@ var queries = {
 		, user : 'SELECT u.cod_usuario AS id, u.cod_roll AS profile, u.usuario AS username, u.pass AS password, u.nom_usuario AS firstname, TRIM(CONCAT(u.apellido1, " ",u.apellido2)) AS lastname, u.habil AS active FROM usuario AS u'
 		, store: 'SELECT c.cod_categoria id, c.nom_categoria name, c.cod_categoria_ext reference, c.habil active FROM categorias c'
 		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p'
-		, property: 'SELECT c.cod_caracteristica id, c.nom_caracteristica name, dp.cod_producto product FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica ORDER BY dp.cod_producto'
+		, property: 'SELECT c.cod_caracteristica id, replace(c.nom_caracteristica,"\r","") name, dp.cod_producto product FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica ORDER BY dp.cod_producto'
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
@@ -462,7 +462,7 @@ function populateQualitrixProducts(qxdb, cb){
 								if(product.id == property.product){
 									_properties.push({
 										id:property.id
-										, name:property.name
+										, name:property.name.replace(/(\\r)|(\<+\/*(html|head|body)+\>)/g,"").trim()
 										, validations:{
 											type:'text'
 										}
