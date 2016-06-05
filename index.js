@@ -38,8 +38,9 @@ var queries = {
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
-		, certificate: 'SELECT cod_certificado id, cod_producto product, cod_usuario `user`, STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i") `date`, remision remission, clausula clause FROM certificado'
+		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i") `created`, remision remission, clausula clause, cantidad quantity, presentacion presentation FROM certificado'
 		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
+		, certificate_values: 'SELECT cod_certificado certificate, cod_encabezado property, lote record, valor value FROM propiedad_certificado'
 	}	
 };
 
@@ -471,7 +472,7 @@ function populateQualitrixProducts(qxdb, cb){
 								if(product.id == property.product){
 									_properties.push({
 										id:property.id
-										, name:property.name.replace(/(\\r)|(\<+\/*(html|head|body)+\>)/g,"").trim()
+										, name:property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))/g,"").trim()
 										, validations:{
 											type:'text'
 										}
@@ -579,7 +580,7 @@ function populateQualitrixRecords(qxdb, cb){
 								, remission: record.remission
 								, quantity: record.quantity
 								, existing_quantity: record.existing_quantity
-								, supplier: record.supplier+1000
+								, supplier: record.supplier
 								, satisfies: record.satisfies == 1
 								, active: record.active == 1
 								, clause: ''
@@ -623,7 +624,7 @@ function populateQualitrixCertificate(qxdb, cb){
 			}
 			else{
 				console.log(addToLog('    ...Se han obtenido '+certificates.length+' registros de e-Register'));
-				console.log(addToLog('      Consultando propiedades en e-Register...'));
+				console.log(addToLog('      Consultando propiedades de certificados en e-Register...'));
 				eregister.query(queries.eregister.certificate_properties
 				, function(error, properties, fields){
 					if(error){
@@ -632,60 +633,82 @@ function populateQualitrixCertificate(qxdb, cb){
 					}
 					else{
 						console.log(addToLog('      ...Se han obtenido '+properties.length+' propiedades de e-Register'));
-						console.log(addToLog('      Relacionando certificados con propiedades...'));
-						writeLog();
-						var items = [];
-						for(var i = 0; i < certificates.length; i++){
-							var item = certificates[i];
-							var _properties = [];
-							for(var j = 0; j < properties.length; j++){
-								var property = properties[j];
-								if(item.id == property.certificate){
-									_properties.push({
-										  property: property.id
-										, name: property.name
-										, creator: item.user
-										, modified: item.created
+						console.log(addToLog('      Consultando valores de certificados en e-Register...'));
+						eregister.query(queries.eregister.certificate_values
+						, function(error, values, fields){
+							if(error){
+								console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
+								writeLog(function(){cb(error);});
+							}
+							else{
+								console.log(addToLog('      ...Se han obtenido '+values.length+' valores de e-Register'));
+
+								
+								console.log(addToLog('      Relacionando certificados con propiedades...'));
+								writeLog();
+								var items = [];
+								for(var i = 0; i < certificates.length; i++){
+									var item = certificates[i];
+									var _properties = [];
+									for(var j = 0; j < properties.length; j++){
+										var property = properties[j];
+										if(item.id == property.certificate){
+											_properties.push({
+												  property: property.id
+												, name: property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))/g,"").trim()
+											});
+										}
+									}
+									addToLog('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el certificado '+item.id);
+
+									var _values = [];
+									for(var j = 0; j < values.length; j++){
+										var value = values[j];
+										if(item.id == value.certificate){
+											_values.push({
+												  property: value.property
+												, record_reference: value.record
+												, value: value.value
+											});
+										}
+									}
+									addToLog('      ...Se han obtenido '+_values.length+' valores de e-Register para el certificado '+item.id);
+
+									items.push({
+										id: item.id
+										, product: item.product
+										, customer: item.customer
+										, quantity: item.quantity
+										, presentation: item.presentation
+										, remission: item.remission
+										, date: item.date
+										, active: 1
+										, clause: item.clause
+										, properties: _properties
+								        , values: _values
+										, creator: item.creator
+										, created: item.created
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
 										, deleter: false
 									});
 								}
+								console.log(addToLog('      ...Relacion finalizada'));
+								writeLog();
+								console.log(addToLog('    Insertando datos en Qualitrix...'));
+								qxdb.collection('certificate').drop(function(error){
+									qxdb.collection('certificate').insert(items, function(error, doc){
+										if(error){
+											console.log(addToLog('    ...Error insertando en tabla certificate'));
+										}else{
+											console.log(addToLog('    ...Tabla certificate poblada exitosamente'));
+										}
+										console.log(addToLog('  Proceso certificate finalizado...'));
+										writeLog(function(){cb(error);});
+									});
+								});
 							}
-							addToLog('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el certificado '+item.id);
-							items.push({
-								id: item.id
-								, product: item.product
-								, customer: item.customer
-								, quantity: item.quantity
-								, presentation: item.presentation
-								, remission: item.remission
-								, date: item.date
-								, active: 1
-								, clause: item.clause
-								, properties: _properties
-								, created: item.date
-								, creator: item.user
-								, modified: item.date
-								, modifier: 0
-								, deleted: false
-								, deleter: false
-							});
-						}
-						console.log(addToLog('      ...Relacion finalizada'));
-						writeLog();
-						console.log(addToLog('    Insertando datos en Qualitrix...'));
-						qxdb.collection('certificate').drop(function(error){
-							qxdb.collection('certificate').insert(items, function(error, doc){
-								if(error){
-									console.log(addToLog('    ...Error insertando en tabla certificate'));
-								}else{
-									console.log(addToLog('    ...Tabla certificate poblada exitosamente'));
-								}
-								console.log(addToLog('  Proceso certificate finalizado...'));
-								writeLog(function(){cb(error);});
-							});
 						});
 					}
 				});
