@@ -38,9 +38,9 @@ var queries = {
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
-		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i") `created`, remision remission, clausula clause, cantidad quantity, presentacion presentation FROM certificado'
+		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, clausula clause, cantidad quantity, presentacion presentation FROM certificado'
 		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
-		, certificate_values: 'SELECT cod_certificado certificate, cod_encabezado property, lote record, valor value FROM propiedad_certificado'
+		, certificate_values: 'SELECT cod_certificado certificate, cod_encabezado property, lote record, valor value FROM propiedad_certificado ORDER BY certificate, record '
 	}	
 };
 
@@ -78,6 +78,8 @@ function startProcess(){
 				}else
 				populateQualitrixProfile(qxdb, function(error){
 					if(error){
+				//populateQualitrixCertificate(qxdb, function(error){
+					//if(true || error){
 						closeEregisterConnection(function(){
 							closeQualitrixConnection(qxdb, endProcess);
 						});
@@ -207,15 +209,23 @@ function populateQualitrixToken(qxdb, cb){
 	        , modified: (new Date()).getTime()
 	        , modifier: 0
 	        , deleted: false
-	        , deleter: false
+	        , deleter: 0
 		}, function(error, doc){
 	    	if(error){
 	    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix'));
 	    	}else{
 	    		console.log(addToLog('  ...Tabla token poblada exitosamente'));
+	    		console.log(addToLog('  Creando indices en tabla token...'));
+	    		qxdb.collection('token').createIndex('token', {unique: true}, function(error){
+    				if(error){
+			    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix'));
+			    	}else{
+			    		console.log(addToLog('  ...Indices creados exitosamente'));
+			    	}
+			    	console.log(addToLog('  Proceso token finalizado...'));
+	    			writeLog(function(){cb(error);});
+	    		});
 	    	}
-	    	console.log(addToLog('  Proceso token finalizado...'));
-	    	writeLog(function(){cb(error);});
 	    });
     });
 }
@@ -244,7 +254,7 @@ function populateQualitrixProfile(qxdb, cb){
 				        , modified: (new Date()).getTime()
 				        , modifier: 0
 				        , deleted: false
-				        , deleter: false
+				        , deleter: 0
 					});
 				}
 				console.log(addToLog('    Insertando datos en profile de Qualitrix...'));
@@ -254,9 +264,18 @@ function populateQualitrixProfile(qxdb, cb){
 				    		console.log(addToLog('    ...Error insertando en tabla profile'));
 				    	}else{
 				    		console.log(addToLog('    ...Tabla profile poblada exitosamente'));
+				    		console.log(addToLog('    Creando indices en tabla profile...'));
+				    		qxdb.collection('profile').createIndex('id', {unique: true}, function(error){
+			    				if(error){
+						    		console.log(addToLog('    ...Error insertando en tabla profile en Qualitrix'));
+						    	}else{
+						    		console.log(addToLog('    ...Indices creados exitosamente'));
+						    	}
+						    	console.log(addToLog('    Proceso profile en finalizado...'));
+				    			writeLog(function(){cb(error);});
+				    		});
 				    	}
-				    	console.log(addToLog('  Proceso profile en finalizado...'));
-				    	writeLog(function(){cb(error);});
+				    	
 				    });
 				});
 			}
@@ -291,7 +310,7 @@ function populateQualitrixUser(qxdb, cb){
 				        , modified: (new Date()).getTime()
 				        , modifier: 0
 				        , deleted: false
-				        , deleter: false
+				        , deleter: 0
 					});
 				}
 				console.log(addToLog('    Insertando datos en user de Qualitrix...'));
@@ -301,9 +320,17 @@ function populateQualitrixUser(qxdb, cb){
 				    		console.log('    ...Error insertando en tabla user');
 				    	}else{
 				    		console.log('    ...Tabla user poblada exitosamente');
+				    		console.log(addToLog('    Creando indices en tabla user...'));
+				    		qxdb.collection('user').createIndex('id', {unique: true}, function(error){
+			    				if(error){
+						    		console.log(addToLog('    ...Error insertando en tabla user en Qualitrix'));
+						    	}else{
+						    		console.log(addToLog('    ...Indices creados exitosamente'));
+						    	}
+						    	console.log(addToLog('  Proceso user en finalizado...'));
+				    			writeLog(function(){cb(error);});
+				    		});
 				    	}
-				    	console.log(addToLog('  Proceso user finalizado...'));
-				    	writeLog(function(){cb(error);});
 				    });
 				});
 			}
@@ -325,15 +352,22 @@ function populateQualitrixSubsidiary(qxdb, cb){
 	        , modified: (new Date()).getTime()
 	        , modifier: 0
 	        , deleted: false
-	        , deleter: false
+	        , deleter: 0
 	    }, function(error, doc){
 	    	if(error){
 	    		console.log(addToLog('  ...Error insertando en tabla subsidiary'));
 	    	}else{
 	    		console.log(addToLog('  ...Tabla subsidiary poblada exitosamente'));
+	    		qxdb.collection('subsidiary').createIndex('id', {unique: true}, function(error){
+    				if(error){
+			    		console.log(addToLog('    ...Error insertando en tabla subsidiary en Qualitrix'));
+			    	}else{
+			    		console.log(addToLog('    ...Indices creados exitosamente'));
+			    	}
+			    	console.log(addToLog('  Proceso subsidiary en finalizado...'));
+	    			writeLog(function(){cb(error);});
+	    		});
 	    	}
-	    	console.log(addToLog('  Proceso subsidiary finalizado...'));
-	    	writeLog(function(){cb(error);});
 	    });
 	});
 }
@@ -371,7 +405,7 @@ function populateQualitrixStore(qxdb, cb){
 								, modified: (new Date()).getTime()
 								, modifier: 0
 								, deleted: false
-								, deleter: false
+								, deleter: 0
 							});
 						}
 						console.log(addToLog('    Insertando datos en Qualitrix...'));
@@ -381,9 +415,16 @@ function populateQualitrixStore(qxdb, cb){
 									console.log(addToLog('    ...Error insertando en tabla store'));
 								}else{
 									console.log(addToLog('    ...Tabla store poblada exitosamente'));
+									qxdb.collection('store').createIndex('id', {unique: true}, function(error){
+					    				if(error){
+								    		console.log(addToLog('    ...Error insertando en tabla store en Qualitrix'));
+								    	}else{
+								    		console.log(addToLog('    ...Indices creados exitosamente'));
+								    	}
+								    	console.log(addToLog('  Proceso store en finalizado...'));
+						    			writeLog(function(){cb(error);});
+						    		});
 								}
-								console.log(addToLog('  Proceso store finalizado...'));
-								writeLog(function(){cb(error);});
 							});
 						});
 					}
@@ -420,7 +461,7 @@ function populateQualitrixExternal(qxdb, cb){
 						, modified: (new Date()).getTime()
 						, modifier: 0
 						, deleted: false
-						, deleter: false
+						, deleter: 0
 					});
 				}
 				console.log(addToLog('    Insertando datos en Qualitrix...'));
@@ -430,9 +471,16 @@ function populateQualitrixExternal(qxdb, cb){
 							console.log(addToLog('    ...Error insertando en tabla external'));
 						}else{
 							console.log(addToLog('    ...Tabla external poblada exitosamente'));
+							qxdb.collection('external').createIndex('id', {unique: true}, function(error){
+			    				if(error){
+						    		console.log(addToLog('    ...Error insertando en tabla external en Qualitrix'));
+						    	}else{
+						    		console.log(addToLog('    ...Indices creados exitosamente'));
+						    	}
+						    	console.log(addToLog('  Proceso external en finalizado...'));
+				    			writeLog(function(){cb(error);});
+				    		});
 						}
-						console.log(addToLog('  Proceso external finalizado...'));
-						writeLog(function(){cb(error);});
 					});
 				});
 			}
@@ -472,7 +520,7 @@ function populateQualitrixProducts(qxdb, cb){
 								if(product.id == property.product){
 									_properties.push({
 										id:property.id
-										, name:property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))/g,"").trim()
+										, name:property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim()
 										, validations:{
 											type:'text'
 										}
@@ -482,7 +530,7 @@ function populateQualitrixProducts(qxdb, cb){
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
-										, deleter: false
+										, deleter: 0
 									});
 								}
 							}
@@ -500,7 +548,7 @@ function populateQualitrixProducts(qxdb, cb){
 								, modified: (new Date()).getTime()
 								, modifier: 0
 								, deleted: false
-								, deleter: false
+								, deleter: 0
 							});
 						}
 						console.log(addToLog('      ...Relacion finalizada'));
@@ -512,9 +560,16 @@ function populateQualitrixProducts(qxdb, cb){
 									console.log(addToLog('    ...Error insertando en tabla product'));
 								}else{
 									console.log(addToLog('    ...Tabla product poblada exitosamente'));
+									qxdb.collection('product').createIndex('id', {unique: true}, function(error){
+					    				if(error){
+								    		console.log(addToLog('    ...Error insertando en tabla product en Qualitrix'));
+								    	}else{
+								    		console.log(addToLog('    ...Indices creados exitosamente'));
+								    	}
+								    	console.log(addToLog('  Proceso product en finalizado...'));
+						    			writeLog(function(){cb(error);});
+						    		});
 								}
-								console.log(addToLog('  Proceso product finalizado...'));
-								writeLog(function(){cb(error);});
 							});
 						});
 					}
@@ -561,7 +616,7 @@ function populateQualitrixRecords(qxdb, cb){
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
-										, deleter: false
+										, deleter: 0
 									});
 								}
 							}
@@ -589,7 +644,7 @@ function populateQualitrixRecords(qxdb, cb){
 								, modified: record.created
 								, modifier: 0
 								, deleted: false
-								, deleter: false
+								, deleter: 0
 							});
 						}
 						console.log(addToLog('      ...Relacion finalizada'));
@@ -601,9 +656,16 @@ function populateQualitrixRecords(qxdb, cb){
 									console.log(addToLog('    ...Error insertando en tabla record'));
 								}else{
 									console.log(addToLog('    ...Tabla record poblada exitosamente'));
+									qxdb.collection('record').createIndex('product', {unique: false}, function(error){
+					    				if(error){
+								    		console.log(addToLog('    ...Error insertando en tabla record en Qualitrix'));
+								    	}else{
+								    		console.log(addToLog('    ...Indices creados exitosamente'));
+								    	}
+								    	console.log(addToLog('  Proceso record en finalizado...'));
+						    			writeLog(function(){cb(error);});
+						    		});
 								}
-								console.log(addToLog('  Proceso record finalizado...'));
-								writeLog(function(){cb(error);});
 							});
 						});
 					}
@@ -637,7 +699,7 @@ function populateQualitrixCertificate(qxdb, cb){
 						eregister.query(queries.eregister.certificate_values
 						, function(error, values, fields){
 							if(error){
-								console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
+								console.log(addToLog('      ...No se han podido obtener datos de e-Register'+ error));
 								writeLog(function(){cb(error);});
 							}
 							else{
@@ -655,23 +717,37 @@ function populateQualitrixCertificate(qxdb, cb){
 										if(item.id == property.certificate){
 											_properties.push({
 												  property: property.id
-												, name: property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))/g,"").trim()
+												, name: property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim()
 											});
 										}
 									}
 									addToLog('      ...Se han obtenido '+_properties.length+' propiedades de e-Register para el certificado '+item.id);
 
 									var _values = [];
+									var _records = [];
+									var record_reference = "";
 									for(var j = 0; j < values.length; j++){
-										var value = values[j];
-										if(item.id == value.certificate){
-											_values.push({
-												  property: value.property
-												, record_reference: value.record
-												, value: value.value
-											});
+										var v = values[j];
+										if(item.id == v.certificate){
+											if(record_reference != v.record){
+												if(_records.length>0){
+													_values.push({
+														record: record_reference,
+														values: _records
+												  	});	
+												}
+											  	_records = [];
+											  	_records.push({property: v.property, value: v.value.trim()});
+											  	record_reference = v.record;
+											}else{
+												_records.push({property: v.property, value: v.value.trim()});
+											}
 										}
 									}
+									_values.push({
+										record: record_reference,
+										values: _records
+								  	});	
 									addToLog('      ...Se han obtenido '+_values.length+' valores de e-Register para el certificado '+item.id);
 
 									items.push({
@@ -681,9 +757,9 @@ function populateQualitrixCertificate(qxdb, cb){
 										, quantity: item.quantity
 										, presentation: item.presentation
 										, remission: item.remission
-										, date: item.date
-										, active: 1
-										, clause: item.clause
+										, date: item.created
+										, active: true
+										, clause: item.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim()
 										, properties: _properties
 								        , values: _values
 										, creator: item.creator
@@ -691,7 +767,7 @@ function populateQualitrixCertificate(qxdb, cb){
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
-										, deleter: false
+										, deleter: 0
 									});
 								}
 								console.log(addToLog('      ...Relacion finalizada'));
@@ -703,9 +779,16 @@ function populateQualitrixCertificate(qxdb, cb){
 											console.log(addToLog('    ...Error insertando en tabla certificate'));
 										}else{
 											console.log(addToLog('    ...Tabla certificate poblada exitosamente'));
+											qxdb.collection('certificate').createIndex('id', {unique: true}, function(error){
+							    				if(error){
+										    		console.log(addToLog('    ...Error insertando en tabla certificate en Qualitrix'));
+										    	}else{
+										    		console.log(addToLog('    ...Indices creados exitosamente'));
+										    	}
+										    	console.log(addToLog('  Proceso certificate en finalizado...'));
+								    			writeLog(function(){cb(error);});
+								    		});
 										}
-										console.log(addToLog('  Proceso certificate finalizado...'));
-										writeLog(function(){cb(error);});
 									});
 								});
 							}
