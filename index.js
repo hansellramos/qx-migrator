@@ -38,7 +38,7 @@ var queries = {
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
-		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, clausula clause, cantidad quantity, presentacion presentation FROM certificado'
+		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, IFNULL(clausula,"N/A") clause, cantidad quantity, presentacion presentation FROM certificado'
 		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
 		, certificate_values: 'SELECT cod_certificado certificate, cod_encabezado property, lote record, valor value FROM propiedad_certificado ORDER BY certificate, record '
 	}	
