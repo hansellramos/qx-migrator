@@ -345,7 +345,7 @@ function populateQualitrixSubsidiary(qxdb, cb){
 		qxdb.collection('subsidiary').insert({
 	        id: 1
 	        , name: 'Barranquilla'
-	        , reference: 3
+	        , reference: '3'
 	        , active: true
 	        , created: (new Date()).getTime()
 	        , creator: 0
