@@ -343,7 +343,11 @@ function populateQualitrixProfile(qxdb, cb){
 			}
 			else{
 				console.log(addToLog('    ...Se han obtenido '+results.length+' registros de e-Register'));
-				var items = [];
+				var items = [
+					{ id: 0, name: 'System Admin', description: 'This is a system administrator', permissions: [], active: true
+						, created: (new Date()).getTime(), creator: 0, modified: (new Date()).getTime(), modifier: 0, deleted: false, deleter: 0
+					}
+				];
 				for(var i = 0; i < results.length;i++){
 					var result = results[i];
 					items.push({
@@ -418,7 +422,11 @@ function populateQualitrixUser(qxdb, cb){
 			}
 			else{
 				console.log(addToLog('    ...Se han obtenido '+results.length+' registros de e-Register'));
-				var items = [];
+				var items = [
+					{ id: 0 , profile: 0 , username: 'admin' , password: 'f40886f8fdeab0149a6defd01b3ace5aa44a9ba5' , firstname: 'Usuario' , lastname: 'Administrador' , allData: true , isAdmin: true
+						, active: true, created: (new Date()).getTime(), creator: 0, modified: (new Date()).getTime(), modifier: 0, deleted: false, deleter: 0
+					}
+				];
 				for(var i = 0; i < results.length;i++){
 					var result = results[i];
 					items.push({
