@@ -55,6 +55,46 @@ var queries = {
 	}	
 };
 
+var permissions = [
+//LIST
+	{ name:'Subsidiary List', reference: 'subsidiary-list', description: 'Permite listar las diferentes sucursales en el sistema' },
+	{ name:'Store List', reference: 'store-list', description: 'Permite listar las diferentes bodegas en el sistema' },
+	{ name:'Product List', reference: 'product-list', description: 'Permite listar los diferentes productos en el sistema' },
+	{ name:'External List', reference: 'external-list', description: 'Permite listar los diferentes proveedores/clientes en el sistema' },
+	{ name:'Record List', reference: 'record-list', description: 'Permite listar las diferentes muestras en el sistema' },
+	{ name:'Certificate List', reference: 'certificate-list', description: 'Permite listar los diferentes certificados en el sistema' },
+	{ name:'User List', reference: 'user-list', description: 'Permite listar los diferentes usuarios en el sistema' },
+	{ name:'Profile List', reference: 'profile-list', description: 'Permite listar los diferentes perfiles en el sistema' },
+//CREATE	
+	{ name:'Subsidiary Creation', reference: 'subsidiary-create', description: 'Permite crear sucursales en el sistema' },
+	{ name:'Store Creation', reference: 'store-create', description: 'Permite crear bodegas en el sistema' },
+	{ name:'Product Creation', reference: 'product-create', description: 'Permite crear productos en el sistema' },
+	{ name:'External Creation', reference: 'external-create', description: 'Permite crear proveedores/clientes en el sistema' },
+	{ name:'Record Creation', reference: 'record-create', description: 'Permite crear muestras en el sistema' },
+	{ name:'Certificate Creation', reference: 'certificate-create', description: 'Permite crear certificados en el sistema' },
+	{ name:'User Creation', reference: 'user-create', description: 'Permite crear usuarios en el sistema' },
+	{ name:'Profile Creation', reference: 'profile-create', description: 'Permite crear perfiles en el sistema' },
+//UPDATE	
+	{ name:'Subsidiary Update', reference: 'subsidiary-update', description: 'Permite modificar sucursales en el sistema' },
+	{ name:'Store Update', reference: 'store-update', description: 'Permite modificar bodegas en el sistema' },
+	{ name:'Product Update', reference: 'product-update', description: 'Permite modificar productos en el sistema' },
+	{ name:'External Update', reference: 'external-update', description: 'Permite modificar proveedores/clientes en el sistema' },
+	{ name:'Record Update', reference: 'record-update', description: 'Permite modificar muestras en el sistema' },
+	{ name:'User Update', reference: 'user-update', description: 'Permite modificar usuarios en el sistema' },
+	{ name:'Profile Update', reference: 'profile-update', description: 'Permite modificar perfiles en el sistema' },
+//DELETE	
+	{ name:'Subsidiary Deletion', reference: 'subsidiary-delete', description: 'Permite eliminar sucursales en el sistema' },
+	{ name:'Store Deletion', reference: 'store-delete', description: 'Permite eliminar bodegas en el sistema' },
+	{ name:'Product Deletion', reference: 'product-delete', description: 'Permite eliminar productos en el sistema' },
+	{ name:'External Deletion', reference: 'external-delete', description: 'Permite eliminar proveedores/clientes en el sistema' },
+	{ name:'Record Deletion', reference: 'record-delete', description: 'Permite eliminar muestras en el sistema' },
+	{ name:'Certificate Deletion', reference: 'certificate-delete', description: 'Permite eliminar certificados en el sistema' },
+	{ name:'User Deletion', reference: 'user-delete', description: 'Permite eliminar usuarios en el sistema' },
+	{ name:'Profile Deletion', reference: 'profile-delete', description: 'Permite eliminar perfiles en el sistema' },
+//Others
+	{ name:'Users reset password', reference: 'user-reset-password', description: 'Permite reiniciar la clave de los usuarios en el sistema' }
+];
+
 function addToLog(string){
 	var d = new Date();
 	log += (1900+d.getYear())+(d.getMonth()<10?'0':'')+(d.getMonth()+1)+(d.getDate()<10?'0':'')+d.getDate()+d.getHours()+d.getMinutes()+(d.getSeconds()<10?'0':'')+d.getSeconds()+' :: '+string+"\r\n";
@@ -93,56 +133,63 @@ function startProcess(){
 							closeQualitrixConnection(qxdb, endProcess);
 						});
 					}else
-						populateQualitrixProfile(qxdb, function(error){
+						populateQualitrixPermissions(qxdb, function(error){
 						if(error){
 							closeEregisterConnection(function(){
 								closeQualitrixConnection(qxdb, endProcess);
 							});
 						}else
-							populateQualitrixUser(qxdb, function(error){
+							populateQualitrixProfile(qxdb, function(error){
 							if(error){
 								closeEregisterConnection(function(){
 									closeQualitrixConnection(qxdb, endProcess);
 								});
 							}else
-								populateQualitrixSubsidiary(qxdb, function(error){
+								populateQualitrixUser(qxdb, function(error){
 								if(error){
 									closeEregisterConnection(function(){
 										closeQualitrixConnection(qxdb, endProcess);
 									});
 								}else
-									populateQualitrixStore(qxdb, function(error){
+									populateQualitrixSubsidiary(qxdb, function(error){
 									if(error){
 										closeEregisterConnection(function(){
 											closeQualitrixConnection(qxdb, endProcess);
 										});
 									}else
-										populateQualitrixExternal(qxdb, function(error){
+										populateQualitrixStore(qxdb, function(error){
 										if(error){
 											closeEregisterConnection(function(){
 												closeQualitrixConnection(qxdb, endProcess);
 											});
 										}else
-											populateQualitrixProducts(qxdb, function(error){
+											populateQualitrixExternal(qxdb, function(error){
 											if(error){
 												closeEregisterConnection(function(){
 													closeQualitrixConnection(qxdb, endProcess);
 												});
 											}else
-												populateQualitrixCertificate(qxdb, function(error){
+												populateQualitrixProducts(qxdb, function(error){
 												if(error){
 													closeEregisterConnection(function(){
 														closeQualitrixConnection(qxdb, endProcess);
 													});
 												}else
-													populateQualitrixRecords(qxdb, function(error){
+													populateQualitrixCertificate(qxdb, function(error){
 													if(error){
 														closeEregisterConnection(function(){
 															closeQualitrixConnection(qxdb, endProcess);
 														});
 													}else
-													closeEregisterConnection(function(){
-														closeQualitrixConnection(qxdb, endProcess);
+														populateQualitrixRecords(qxdb, function(error){
+														if(error){
+															closeEregisterConnection(function(){
+																closeQualitrixConnection(qxdb, endProcess);
+															});
+														}else
+														closeEregisterConnection(function(){
+															closeQualitrixConnection(qxdb, endProcess);
+														});
 													});
 												});
 											});
@@ -214,11 +261,11 @@ function deleteCounters(qxdb, cb){
 	console.log(addToLog('Eliminando contadores'));
 	qxdb.collection('counters').drop(function(error){
 		if(error){
-    		console.log(addToLog('...Error eliminando contadores en Qualitrix. '+error));
+    		console.log(addToLog('...No fue necesario eliminar contadores en Qualitrix. '));
     	}else{
     		console.log(addToLog('...Contadores eliminados exitosamente'));
     	}
-    	writeLog(function(){cb(error);});
+    	writeLog(function(){cb(false);});
 	});
 }
 
@@ -259,6 +306,32 @@ function populateQualitrixToken(qxdb, cb){
     });
 }
 
+function populateQualitrixPermissions(qxdb, cb){
+	console.log(addToLog('  Iniciando Proceso permission...'));
+	console.log(addToLog('    Insertando datos en permission de Qualitrix...'));
+	qxdb.collection('permission').drop(function(error){
+		qxdb.collection('permission').insert(permissions, function(error, doc){
+			if(error){
+				console.log(addToLog('    ...Error insertando en tabla permission. '+error));
+				writeLog(function(){cb(error);});
+			}else{
+				console.log(addToLog('    ...Tabla permission poblada exitosamente'));
+				console.log(addToLog('    Creando indices en tabla permission...'));
+				qxdb.collection('permission').createIndex('reference', {unique: true}, function(error){
+					if(error){
+						console.log(addToLog('    ...Error insertando en tabla permission en Qualitrix. '+error));
+					}else{
+						console.log(addToLog('    ...Indices creados exitosamente'));
+					}						
+					console.log(addToLog('    Proceso permission en finalizado...'));
+					writeLog(function(){cb(error);});
+				});
+			}
+			
+		});
+	});
+}
+
 function populateQualitrixProfile(qxdb, cb){
 	console.log(addToLog('  Iniciando Proceso profile...'));
 	console.log(addToLog('    Consultando datos de table roll en e-Register...'));
@@ -277,6 +350,7 @@ function populateQualitrixProfile(qxdb, cb){
 						id: result.id
 						, name: result.name
 						, description: result.description
+						, permissions: []
 						, active: true
 						, created: (new Date()).getTime()
 				        , creator: 0
