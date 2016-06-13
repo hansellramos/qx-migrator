@@ -41,6 +41,17 @@ var queries = {
 		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, IFNULL(clausula,"N/A") clause, cantidad quantity, presentacion presentation FROM certificado'
 		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
 		, certificate_values: 'SELECT cod_certificado certificate, cod_encabezado property, lote record, valor value FROM propiedad_certificado ORDER BY certificate, record '
+	}
+	, counters: {
+		profile: 'SELECT MAX(cod_roll)+1 counter FROM roll'
+		, user: 'SELECT MAX(cod_usuario)+1 counter FROM usuario'
+		, store: 'SELECT MAX(cod_categoria)+1 counter FROM categorias'
+		, product: 'SELECT MAX(cod_producto)+1 counter FROM productos'
+		, property: 'SELECT MAX(cod_caracteristica)+1 counter FROM caracteristicas'
+		, external: 'SELECT MAX(cod_proveedor)+1000+1 counter FROM proveedores'
+		, record: 'SELECT MAX(cod_muestra)+1 counter FROM muestras'
+		, certificate: 'SELECT MAX(cod_certificado)+1 counter FROM certificado'
+		, subsidiary: 'SELECT 1+1 counter'
 	}	
 };
 
@@ -54,7 +65,7 @@ function writeLog(cb){
 	var d = processDate;
 	fs.appendFile('log_'+(1900+d.getYear())+(d.getMonth()<10?'0':'')+(d.getMonth()+1)+(d.getDate()<10?'0':'')+d.getDate()+d.getHours()+d.getMinutes()+(d.getSeconds()<10?'0':'')+d.getSeconds()+'.log', log, function(error){
 		if(error){
-			console.log(error);
+			console.log(addToLog(error));
 		}
 		log = '';
 		if(cb){
@@ -70,64 +81,69 @@ function startProcess(){
 			if(error){
 				closeQualitrixConnection(qxdb, endProcess);
 			}else
-			populateQualitrixToken(qxdb, function(error){
+				deleteCounters(qxdb, function(error){
 				if(error){
 					closeEregisterConnection(function(){
 						closeQualitrixConnection(qxdb, endProcess);
 					});
 				}else
-				populateQualitrixProfile(qxdb, function(error){
+					populateQualitrixToken(qxdb, function(error){
 					if(error){
-				//populateQualitrixCertificate(qxdb, function(error){
-					//if(true || error){
 						closeEregisterConnection(function(){
 							closeQualitrixConnection(qxdb, endProcess);
 						});
 					}else
-					populateQualitrixUser(qxdb, function(error){
+						populateQualitrixProfile(qxdb, function(error){
 						if(error){
 							closeEregisterConnection(function(){
 								closeQualitrixConnection(qxdb, endProcess);
 							});
 						}else
-						populateQualitrixSubsidiary(qxdb, function(error){
+							populateQualitrixUser(qxdb, function(error){
 							if(error){
 								closeEregisterConnection(function(){
 									closeQualitrixConnection(qxdb, endProcess);
 								});
 							}else
-							populateQualitrixStore(qxdb, function(error){
+								populateQualitrixSubsidiary(qxdb, function(error){
 								if(error){
 									closeEregisterConnection(function(){
 										closeQualitrixConnection(qxdb, endProcess);
 									});
 								}else
-								populateQualitrixExternal(qxdb, function(error){
+									populateQualitrixStore(qxdb, function(error){
 									if(error){
 										closeEregisterConnection(function(){
 											closeQualitrixConnection(qxdb, endProcess);
 										});
 									}else
-									populateQualitrixProducts(qxdb, function(error){
+										populateQualitrixExternal(qxdb, function(error){
 										if(error){
 											closeEregisterConnection(function(){
 												closeQualitrixConnection(qxdb, endProcess);
 											});
 										}else
-										populateQualitrixCertificate(qxdb, function(error){
+											populateQualitrixProducts(qxdb, function(error){
 											if(error){
 												closeEregisterConnection(function(){
 													closeQualitrixConnection(qxdb, endProcess);
 												});
 											}else
-											populateQualitrixRecords(qxdb, function(error){
+												populateQualitrixCertificate(qxdb, function(error){
 												if(error){
 													closeEregisterConnection(function(){
 														closeQualitrixConnection(qxdb, endProcess);
 													});
 												}else
-												closeEregisterConnection(function(){
-													closeQualitrixConnection(qxdb, endProcess);
+													populateQualitrixRecords(qxdb, function(error){
+													if(error){
+														closeEregisterConnection(function(){
+															closeQualitrixConnection(qxdb, endProcess);
+														});
+													}else
+													closeEregisterConnection(function(){
+														closeQualitrixConnection(qxdb, endProcess);
+													});
 												});
 											});
 										});
@@ -194,6 +210,18 @@ function closeEregisterConnection(cb){
 	},1000);
 }
 
+function deleteCounters(qxdb, cb){
+	console.log(addToLog('Eliminando contadores'));
+	qxdb.collection('counters').drop(function(error){
+		if(error){
+    		console.log(addToLog('...Error eliminando contadores en Qualitrix. '+error));
+    	}else{
+    		console.log(addToLog('...Contadores eliminados exitosamente'));
+    	}
+    	writeLog(function(){cb(error);});
+	});
+}
+
 function populateQualitrixToken(qxdb, cb){
 	console.log(addToLog('  Iniciando Proceso token...'));
 	qxdb.collection('token').drop(function(error){
@@ -212,13 +240,14 @@ function populateQualitrixToken(qxdb, cb){
 	        , deleter: 0
 		}, function(error, doc){
 	    	if(error){
-	    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix'));
+	    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix. '+error));
+	    		writeLog(function(){cb(error);});
 	    	}else{
 	    		console.log(addToLog('  ...Tabla token poblada exitosamente'));
 	    		console.log(addToLog('  Creando indices en tabla token...'));
 	    		qxdb.collection('token').createIndex('token', {unique: true}, function(error){
     				if(error){
-			    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix'));
+			    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix. '+error));
 			    	}else{
 			    		console.log(addToLog('  ...Indices creados exitosamente'));
 			    	}
@@ -261,18 +290,39 @@ function populateQualitrixProfile(qxdb, cb){
 				qxdb.collection('profile').drop(function(error){
 					qxdb.collection('profile').insert(items, function(error, doc){
 				    	if(error){
-				    		console.log(addToLog('    ...Error insertando en tabla profile'));
+				    		console.log(addToLog('    ...Error insertando en tabla profile. '+error));
+				    		writeLog(function(){cb(error);});
 				    	}else{
 				    		console.log(addToLog('    ...Tabla profile poblada exitosamente'));
 				    		console.log(addToLog('    Creando indices en tabla profile...'));
 				    		qxdb.collection('profile').createIndex('id', {unique: true}, function(error){
 			    				if(error){
-						    		console.log(addToLog('    ...Error insertando en tabla profile en Qualitrix'));
+						    		console.log(addToLog('    ...Error insertando en tabla profile en Qualitrix. '+error));
+						    		writeLog(function(){cb(error);});
 						    	}else{
 						    		console.log(addToLog('    ...Indices creados exitosamente'));
+						    		console.log(addToLog('    Creando contadores en tabla profile...'));
+						    		eregister.query(queries.counters.profile
+					    			, function(error, results, fields){
+					    				if(error){
+				    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+											writeLog(function(){cb(error);});
+					    				}else{
+					    					qxdb.collection('counters').insert({
+					    						name: 'profile',
+					    						seq: results[0].counter,
+					    						date: (new Date()).getTime()
+					    					}, function(error, doc){
+					    						if(error){
+					    							console.log(addToLog('    ...Error insertando en tabla profile. '+error));
+					    						}else{
+					    							console.log(addToLog('    Proceso profile en finalizado...'));
+					    						}
+					    						writeLog(function(){cb(error);});
+					    					});
+					    				}
+					    			});
 						    	}
-						    	console.log(addToLog('    Proceso profile en finalizado...'));
-				    			writeLog(function(){cb(error);});
 				    		});
 				    	}
 				    	
@@ -289,7 +339,7 @@ function populateQualitrixUser(qxdb, cb){
 	eregister.query(queries.eregister.user
 		, function(error, results, fields){
 			if(error){
-				console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+				console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
 				writeLog(function(){cb(error);});
 			}
 			else{
@@ -317,18 +367,39 @@ function populateQualitrixUser(qxdb, cb){
 				qxdb.collection('user').drop(function(error){
 					qxdb.collection('user').insert(items, function(error, doc){
 				    	if(error){
-				    		console.log('    ...Error insertando en tabla user');
+				    		console.log(addToLog('    ...Error insertando en tabla user. '+error));
+				    		writeLog(function(){cb(error);});
 				    	}else{
-				    		console.log('    ...Tabla user poblada exitosamente');
+				    		console.log(addToLog('    ...Tabla user poblada exitosamente'));
 				    		console.log(addToLog('    Creando indices en tabla user...'));
 				    		qxdb.collection('user').createIndex('id', {unique: true}, function(error){
 			    				if(error){
-						    		console.log(addToLog('    ...Error insertando en tabla user en Qualitrix'));
+						    		console.log(addToLog('    ...Error insertando en tabla user en Qualitrix. '+error));
+						    		writeLog(function(){cb(error);});
 						    	}else{
 						    		console.log(addToLog('    ...Indices creados exitosamente'));
+						    		console.log(addToLog('    Creando contadores en tabla user...'));
+						    		eregister.query(queries.counters.user
+					    			, function(error, results, fields){
+					    				if(error){
+				    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+											writeLog(function(){cb(error);});
+					    				}else{
+					    					qxdb.collection('counters').insert({
+					    						name: 'user',
+					    						seq: results[0].counter,
+					    						date: (new Date()).getTime()
+					    					}, function(error, doc){
+					    						if(error){
+					    							console.log(addToLog('    ...Error insertando en tabla user. '+error));
+					    						}else{
+					    							console.log(addToLog('    Proceso user en finalizado...'));
+					    						}
+					    						writeLog(function(){cb(error);});
+					    					});
+					    				}
+					    			});
 						    	}
-						    	console.log(addToLog('  Proceso user en finalizado...'));
-				    			writeLog(function(){cb(error);});
 				    		});
 				    	}
 				    });
@@ -341,7 +412,7 @@ function populateQualitrixUser(qxdb, cb){
 function populateQualitrixSubsidiary(qxdb, cb){
 	console.log(addToLog('  Iniciando Proceso subsidiary...'));
 	qxdb.collection('subsidiary').drop(function(error){
-		console.log(addToLog('  Insertando en tabla subsidiary...'));
+		console.log(addToLog('    Insertando en tabla subsidiary...'));
 		qxdb.collection('subsidiary').insert({
 	        id: 1
 	        , name: 'Barranquilla'
@@ -355,17 +426,39 @@ function populateQualitrixSubsidiary(qxdb, cb){
 	        , deleter: 0
 	    }, function(error, doc){
 	    	if(error){
-	    		console.log(addToLog('  ...Error insertando en tabla subsidiary'));
+	    		console.log(addToLog('    ...Error insertando en tabla subsidiary. '+error));
+	    		writeLog(function(){cb(error);});
 	    	}else{
-	    		console.log(addToLog('  ...Tabla subsidiary poblada exitosamente'));
+	    		console.log(addToLog('    ...Tabla subsidiary poblada exitosamente'));
+				console.log(addToLog('    Creando índices de tabla subsidiary en Qualitrix...'));
 	    		qxdb.collection('subsidiary').createIndex('id', {unique: true}, function(error){
     				if(error){
-			    		console.log(addToLog('    ...Error insertando en tabla subsidiary en Qualitrix'));
+			    		console.log(addToLog('    ...Error insertando en tabla subsidiary en Qualitrix. '+error));
+			    		writeLog(function(){cb(error);});
 			    	}else{
 			    		console.log(addToLog('    ...Indices creados exitosamente'));
+			    		console.log(addToLog('    Creando contadores en tabla subsidiary...'));
+			    		eregister.query(queries.counters.subsidiary
+		    			, function(error, results, fields){
+		    				if(error){
+	    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+								writeLog(function(){cb(error);});
+		    				}else{
+		    					qxdb.collection('counters').insert({
+		    						name: 'subsidiary',
+		    						seq: results[0].counter,
+		    						date: (new Date()).getTime()
+		    					}, function(error, doc){
+		    						if(error){
+		    							console.log(addToLog('    ...Error insertando en tabla subsidiary. '+error));
+		    						}else{
+		    							console.log(addToLog('    Proceso subsidiary en finalizado...'));
+		    						}
+		    						writeLog(function(){cb(error);});
+		    					});
+		    				}
+		    			});
 			    	}
-			    	console.log(addToLog('  Proceso subsidiary en finalizado...'));
-	    			writeLog(function(){cb(error);});
 	    		});
 	    	}
 	    });
@@ -374,16 +467,17 @@ function populateQualitrixSubsidiary(qxdb, cb){
 
 function populateQualitrixStore(qxdb, cb){
 	console.log(addToLog('  Iniciando Proceso store...'));
-	console.log(addToLog('  Consultando subsidiary Barranquilla...'));
-	qxdb.collection('subsidiary').findOne({reference:3}, function(error, subsidiary){
+	console.log(addToLog('    Consultando subsidiary Barranquilla...'));
+	qxdb.collection('subsidiary').findOne({reference:'3'}, function(error, subsidiary){
 		if(error){
-			console.log(addToLog('  ...Error Consultando Subsidiary Barranquilla'));
+			console.log(addToLog('    ...Error Consultando Subsidiary Barranquilla. '+error));
+			writeLog(function(){cb(error);});
 		}else{
 			console.log(addToLog('    Consultando datos de table categorias en e-Register...'));
 			eregister.query(queries.eregister.store
 				, function(error, results, fields){
 					if(error){
-						console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
 						writeLog(function(){cb(error);});
 					}
 					else{
@@ -412,17 +506,38 @@ function populateQualitrixStore(qxdb, cb){
 						qxdb.collection('store').drop(function(error){
 							qxdb.collection('store').insert(items, function(error, doc){
 								if(error){
-									console.log(addToLog('    ...Error insertando en tabla store'));
+									console.log(addToLog('    ...Error insertando en tabla store. '+error));
+									writeLog(function(){cb(error);});
 								}else{
 									console.log(addToLog('    ...Tabla store poblada exitosamente'));
 									qxdb.collection('store').createIndex('id', {unique: true}, function(error){
 					    				if(error){
-								    		console.log(addToLog('    ...Error insertando en tabla store en Qualitrix'));
+								    		console.log(addToLog('    ...Error insertando en tabla store en Qualitrix. '+error));
+								    		writeLog(function(){cb(error);});
 								    	}else{
 								    		console.log(addToLog('    ...Indices creados exitosamente'));
+								    		console.log(addToLog('    Creando contadores en tabla store...'));
+								    		eregister.query(queries.counters.store
+							    			, function(error, results, fields){
+							    				if(error){
+						    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+													writeLog(function(){cb(error);});
+							    				}else{
+							    					qxdb.collection('counters').insert({
+							    						name: 'store',
+							    						seq: results[0].counter,
+							    						date: (new Date()).getTime()
+							    					}, function(error, doc){
+							    						if(error){
+							    							console.log(addToLog('    ...Error insertando en tabla store. '+error));
+							    						}else{
+							    							console.log(addToLog('    Proceso store en finalizado...'));
+							    						}
+							    						writeLog(function(){cb(error);});
+							    					});
+							    				}
+							    			});
 								    	}
-								    	console.log(addToLog('  Proceso store en finalizado...'));
-						    			writeLog(function(){cb(error);});
 						    		});
 								}
 							});
@@ -440,7 +555,7 @@ function populateQualitrixExternal(qxdb, cb){
 	eregister.query(queries.eregister.external
 		, function(error, results, fields){
 			if(error){
-				console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+				console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
 				writeLog(function(){cb(error);});
 			}
 			else{
@@ -468,17 +583,38 @@ function populateQualitrixExternal(qxdb, cb){
 				qxdb.collection('external').drop(function(error){
 					qxdb.collection('external').insert(items, function(error, doc){
 						if(error){
-							console.log(addToLog('    ...Error insertando en tabla external'));
+							console.log(addToLog('    ...Error insertando en tabla external. '+error));
+							writeLog(function(){cb(error);});
 						}else{
 							console.log(addToLog('    ...Tabla external poblada exitosamente'));
 							qxdb.collection('external').createIndex('id', {unique: true}, function(error){
 			    				if(error){
-						    		console.log(addToLog('    ...Error insertando en tabla external en Qualitrix'));
+						    		console.log(addToLog('    ...Error insertando en tabla external en Qualitrix. '+error));
+						    		writeLog(function(){cb(error);});
 						    	}else{
 						    		console.log(addToLog('    ...Indices creados exitosamente'));
+						    		console.log(addToLog('    Creando contadores en tabla external...'));
+						    		eregister.query(queries.counters.external
+					    			, function(error, results, fields){
+					    				if(error){
+				    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+											writeLog(function(){cb(error);});
+					    				}else{
+					    					qxdb.collection('counters').insert({
+					    						name: 'external',
+					    						seq: results[0].counter,
+					    						date: (new Date()).getTime()
+					    					}, function(error, doc){
+					    						if(error){
+					    							console.log(addToLog('    ...Error insertando en tabla external. '+error));
+					    						}else{
+					    							console.log(addToLog('    Proceso external en finalizado...'));
+					    						}
+					    						writeLog(function(){cb(error);});
+					    					});
+					    				}
+					    			});
 						    	}
-						    	console.log(addToLog('  Proceso external en finalizado...'));
-				    			writeLog(function(){cb(error);});
 				    		});
 						}
 					});
@@ -495,7 +631,7 @@ function populateQualitrixProducts(qxdb, cb){
 	eregister.query(queries.eregister.product
 		, function(error, products, fields){
 			if(error){
-				console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+				console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
 				writeLog(function(){cb(error);});
 			}
 			else{
@@ -504,7 +640,7 @@ function populateQualitrixProducts(qxdb, cb){
 				eregister.query(queries.eregister.property
 				, function(error, properties, fields){
 					if(error){
-						console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
+						console.log(addToLog('      ...No se han podido obtener datos de e-Register. '+error));
 						writeLog(function(){cb(error);});
 					}
 					else{
@@ -557,17 +693,58 @@ function populateQualitrixProducts(qxdb, cb){
 						qxdb.collection('product').drop(function(error){
 							qxdb.collection('product').insert(items, function(error, doc){
 								if(error){
-									console.log(addToLog('    ...Error insertando en tabla product'));
+									console.log(addToLog('    ...Error insertando en tabla product. '+error));
+									writeLog(function(){cb(error);});
 								}else{
 									console.log(addToLog('    ...Tabla product poblada exitosamente'));
 									qxdb.collection('product').createIndex('id', {unique: true}, function(error){
 					    				if(error){
-								    		console.log(addToLog('    ...Error insertando en tabla product en Qualitrix'));
+								    		console.log(addToLog('    ...Error insertando en tabla product en Qualitrix. '+error));
+								    		writeLog(function(){cb(error);});
 								    	}else{
 								    		console.log(addToLog('    ...Indices creados exitosamente'));
+								    		console.log(addToLog('    Creando contadores en tabla profile...'));
+								    		eregister.query(queries.counters.profile
+							    			, function(error, results, fields){
+							    				if(error){
+						    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+													writeLog(function(){cb(error);});
+							    				}else{
+							    					qxdb.collection('counters').insert({
+							    						name: 'product',
+							    						seq: results[0].counter,
+							    						date: (new Date()).getTime()
+							    					}, function(error, doc){
+							    						if(error){
+							    							console.log(addToLog('    ...Error insertando en tabla product. '+error));
+							    							writeLog(function(){cb(error);});
+							    						}else{
+							    							console.log(addToLog('    Creando contadores en tabla property...'));
+												    		eregister.query(queries.counters.property
+											    			, function(error, results, fields){
+											    				if(error){
+										    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+																	writeLog(function(){cb(error);});
+											    				}else{
+											    					qxdb.collection('counters').insert({
+											    						name: 'property',
+											    						seq: results[0].counter,
+											    						date: (new Date()).getTime()
+											    					}, function(error, doc){
+											    						if(error){
+											    							console.log(addToLog('    ...Error insertando en tabla property. '+error));
+											    						}else{
+											    							console.log(addToLog('    Proceso product en finalizado...'));
+											    						}
+											    						writeLog(function(){cb(error);});
+											    					});
+											    				}
+											    			});
+							    						}
+							    					});
+							    				}
+							    			});
 								    	}
-								    	console.log(addToLog('  Proceso product en finalizado...'));
-						    			writeLog(function(){cb(error);});
 						    		});
 								}
 							});
@@ -585,7 +762,7 @@ function populateQualitrixRecords(qxdb, cb){
 	eregister.query(queries.eregister.record
 		, function(error, records, fields){
 			if(error){
-				console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+				console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
 				writeLog(function(){cb(error);});
 			}
 			else{
@@ -594,7 +771,7 @@ function populateQualitrixRecords(qxdb, cb){
 				eregister.query(queries.eregister.record_detail
 				, function(error, properties, fields){
 					if(error){
-						console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
+						console.log(addToLog('      ...No se han podido obtener datos de e-Register. '+error));
 						writeLog(function(){cb(error);});
 					}
 					else{
@@ -653,17 +830,38 @@ function populateQualitrixRecords(qxdb, cb){
 						qxdb.collection('record').drop(function(error){
 							qxdb.collection('record').insert(items, function(error, doc){
 								if(error){
-									console.log(addToLog('    ...Error insertando en tabla record'));
+									console.log(addToLog('    ...Error insertando en tabla record. '+error));
+									writeLog(function(){cb(error);});
 								}else{
 									console.log(addToLog('    ...Tabla record poblada exitosamente'));
 									qxdb.collection('record').createIndex('product', {unique: false}, function(error){
 					    				if(error){
-								    		console.log(addToLog('    ...Error insertando en tabla record en Qualitrix'));
+								    		console.log(addToLog('    ...Error insertando en tabla record en Qualitrix. '+error));
+								    		writeLog(function(){cb(error);});
 								    	}else{
 								    		console.log(addToLog('    ...Indices creados exitosamente'));
+								    		console.log(addToLog('    Creando contadores en tabla record...'));
+								    		eregister.query(queries.counters.record
+							    			, function(error, results, fields){
+							    				if(error){
+						    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+													writeLog(function(){cb(error);});
+							    				}else{
+							    					qxdb.collection('counters').insert({
+							    						name: 'record',
+							    						seq: results[0].counter,
+							    						date: (new Date()).getTime()
+							    					}, function(error, doc){
+							    						if(error){
+							    							console.log(addToLog('    ...Error insertando en tabla record. '+error));
+							    						}else{
+							    							console.log(addToLog('    Proceso record en finalizado...'));
+							    						}
+							    						writeLog(function(){cb(error);});
+							    					});
+							    				}
+							    			});
 								    	}
-								    	console.log(addToLog('  Proceso record en finalizado...'));
-						    			writeLog(function(){cb(error);});
 						    		});
 								}
 							});
@@ -681,7 +879,7 @@ function populateQualitrixCertificate(qxdb, cb){
 	eregister.query(queries.eregister.certificate
 		, function(error, certificates, fields){
 			if(error){
-				console.log(addToLog('    ...No se han podido obtener datos de e-Register'));
+				console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
 				writeLog(function(){cb(error);});
 			}
 			else{
@@ -690,7 +888,7 @@ function populateQualitrixCertificate(qxdb, cb){
 				eregister.query(queries.eregister.certificate_properties
 				, function(error, properties, fields){
 					if(error){
-						console.log(addToLog('      ...No se han podido obtener datos de e-Register'));
+						console.log(addToLog('      ...No se han podido obtener datos de e-Register. '+error));
 						writeLog(function(){cb(error);});
 					}
 					else{
@@ -704,8 +902,6 @@ function populateQualitrixCertificate(qxdb, cb){
 							}
 							else{
 								console.log(addToLog('      ...Se han obtenido '+values.length+' valores de e-Register'));
-
-								
 								console.log(addToLog('      Relacionando certificados con propiedades...'));
 								writeLog();
 								var items = [];
@@ -749,7 +945,6 @@ function populateQualitrixCertificate(qxdb, cb){
 										values: _records
 								  	});	
 									addToLog('      ...Se han obtenido '+_values.length+' valores de e-Register para el certificado '+item.id);
-
 									items.push({
 										id: item.id
 										, product: item.product
@@ -776,17 +971,38 @@ function populateQualitrixCertificate(qxdb, cb){
 								qxdb.collection('certificate').drop(function(error){
 									qxdb.collection('certificate').insert(items, function(error, doc){
 										if(error){
-											console.log(addToLog('    ...Error insertando en tabla certificate'));
+											console.log(addToLog('    ...Error insertando en tabla certificate. '+error));
+											writeLog(function(){cb(error);});
 										}else{
 											console.log(addToLog('    ...Tabla certificate poblada exitosamente'));
 											qxdb.collection('certificate').createIndex('id', {unique: true}, function(error){
 							    				if(error){
-										    		console.log(addToLog('    ...Error insertando en tabla certificate en Qualitrix'));
+										    		console.log(addToLog('    ...Error insertando en tabla certificate en Qualitrix. '+error));
+										    		writeLog(function(){cb(error);});
 										    	}else{
 										    		console.log(addToLog('    ...Indices creados exitosamente'));
+										    		console.log(addToLog('    Creando contadores en tabla certificate...'));
+										    		eregister.query(queries.counters.certificate
+									    			, function(error, results, fields){
+									    				if(error){
+								    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
+															writeLog(function(){cb(error);});
+									    				}else{
+									    					qxdb.collection('counters').insert({
+									    						name: 'certificate',
+									    						seq: results[0].counter,
+									    						date: (new Date()).getTime()
+									    					}, function(error, doc){
+									    						if(error){
+									    							console.log(addToLog('    ...Error insertando en tabla certificate. '+error));
+									    						}else{
+									    							console.log(addToLog('    Proceso certificate en finalizado...'));
+									    						}
+									    						writeLog(function(){cb(error);});
+									    					});
+									    				}
+									    			});
 										    	}
-										    	console.log(addToLog('  Proceso certificate en finalizado...'));
-								    			writeLog(function(){cb(error);});
 								    		});
 										}
 									});
