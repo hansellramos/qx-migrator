@@ -274,11 +274,10 @@ function populateQualitrixToken(qxdb, cb){
 	qxdb.collection('token').drop(function(error){
 		console.log(addToLog('  Insertando en tabla token en Qualitrix...'));
 		qxdb.collection('token').insert({
-			id: qxdb.collection('token').count()
-	        , token: '=='
+			token: '=='
 	        , user: 0
-	        , iat: (new Date()).getTime()-3600
-	        , expires: (new Date()).getTime() 
+	        , iat: (new Date()).getTime()
+	        , expires: (new Date()).getTime()+3600000
 	        , created: (new Date()).getTime()
 	        , creator: 0
 	        , modified: (new Date()).getTime()
