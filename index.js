@@ -283,7 +283,7 @@ function populateQualitrixToken(qxdb, cb){
 	        , modified: (new Date()).getTime()
 	        , modifier: 0
 	        , deleted: false
-	        , deleter: 0
+	        , deleter: false
 		}, function(error, doc){
 	    	if(error){
 	    		console.log(addToLog('  ...Error insertando en tabla token en Qualitrix. '+error));
@@ -344,7 +344,7 @@ function populateQualitrixProfile(qxdb, cb){
 				console.log(addToLog('    ...Se han obtenido '+results.length+' registros de e-Register'));
 				var items = [
 					{ id: 0, name: 'System Admin', description: 'This is a system administrator', permissions: [], active: true
-						, created: (new Date()).getTime(), creator: 0, modified: (new Date()).getTime(), modifier: 0, deleted: false, deleter: 0
+						, created: (new Date()).getTime(), creator: 0, modified: (new Date()).getTime(), modifier: 0, deleted: false, deleter: false
 					}
 				];
 				for(var i = 0; i < results.length;i++){
@@ -360,7 +360,7 @@ function populateQualitrixProfile(qxdb, cb){
 				        , modified: (new Date()).getTime()
 				        , modifier: 0
 				        , deleted: false
-				        , deleter: 0
+				        , deleter: false
 					});
 				}
 				console.log(addToLog('    Insertando datos en profile de Qualitrix...'));
@@ -423,7 +423,7 @@ function populateQualitrixUser(qxdb, cb){
 				console.log(addToLog('    ...Se han obtenido '+results.length+' registros de e-Register'));
 				var items = [
 					{ id: 0 , profile: 0 , username: 'admin' , password: 'f40886f8fdeab0149a6defd01b3ace5aa44a9ba5' , firstname: 'Usuario' , lastname: 'Administrador' , allData: true , isAdmin: true
-						, active: true, created: (new Date()).getTime(), creator: 0, modified: (new Date()).getTime(), modifier: 0, deleted: false, deleter: 0
+						, active: true, created: (new Date()).getTime(), creator: 0, modified: (new Date()).getTime(), modifier: 0, deleted: false, deleter: false
 					}
 				];
 				for(var i = 0; i < results.length;i++){
@@ -441,7 +441,7 @@ function populateQualitrixUser(qxdb, cb){
 				        , modified: (new Date()).getTime()
 				        , modifier: 0
 				        , deleted: false
-				        , deleter: 0
+				        , deleter: false
 					});
 				}
 				console.log(addToLog('    Insertando datos en user de Qualitrix...'));
@@ -504,7 +504,7 @@ function populateQualitrixSubsidiary(qxdb, cb){
 	        , modified: (new Date()).getTime()
 	        , modifier: 0
 	        , deleted: false
-	        , deleter: 0
+	        , deleter: false
 	    }, function(error, doc){
 	    	if(error){
 	    		console.log(addToLog('    ...Error insertando en tabla subsidiary. '+error));
@@ -580,7 +580,7 @@ function populateQualitrixStore(qxdb, cb){
 								, modified: (new Date()).getTime()
 								, modifier: 0
 								, deleted: false
-								, deleter: 0
+								, deleter: false
 							});
 						}
 						console.log(addToLog('    Insertando datos en Qualitrix...'));
@@ -657,7 +657,7 @@ function populateQualitrixExternal(qxdb, cb){
 						, modified: (new Date()).getTime()
 						, modifier: 0
 						, deleted: false
-						, deleter: 0
+						, deleter: false
 					});
 				}
 				console.log(addToLog('    Insertando datos en Qualitrix...'));
@@ -747,7 +747,7 @@ function populateQualitrixProducts(qxdb, cb){
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
-										, deleter: 0
+										, deleter: false
 									});
 								}
 							}
@@ -765,7 +765,7 @@ function populateQualitrixProducts(qxdb, cb){
 								, modified: (new Date()).getTime()
 								, modifier: 0
 								, deleted: false
-								, deleter: 0
+								, deleter: false
 							});
 						}
 						console.log(addToLog('      ...Relacion finalizada'));
@@ -874,7 +874,7 @@ function populateQualitrixRecords(qxdb, cb){
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
-										, deleter: 0
+										, deleter: false
 									});
 								}
 							}
@@ -902,7 +902,7 @@ function populateQualitrixRecords(qxdb, cb){
 								, modified: record.created
 								, modifier: 0
 								, deleted: false
-								, deleter: 0
+								, deleter: false
 							});
 						}
 						console.log(addToLog('      ...Relacion finalizada'));
@@ -1043,7 +1043,7 @@ function populateQualitrixCertificate(qxdb, cb){
 										, modified: (new Date()).getTime()
 										, modifier: 0
 										, deleted: false
-										, deleter: 0
+										, deleter: false
 									});
 								}
 								console.log(addToLog('      ...Relacion finalizada'));
