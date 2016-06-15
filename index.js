@@ -36,7 +36,7 @@ var queries = {
 		, product: 'SELECT p.cod_producto id, p.cod_categoria store, p.nom_producto name, p.cod_producto_ext reference, p.habil active FROM productos p'
 		, property: 'SELECT c.cod_caracteristica id, replace(c.nom_caracteristica,"\r","") name, dp.cod_producto product FROM caracteristicas c INNER JOIN detalle_producto dp ON dp.cod_caracteristica = c.cod_caracteristica ORDER BY dp.cod_producto'
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
-		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, m.fecha_analisis analysis_date,  m.fecha_elaboracion elaboration_date, m.fecha_vencimiento due_date, m.fecha_recepcion reception_date, m.cod_usuario user, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, m.clausula clause, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
+		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, UNIX_TIMESTAMP(m.fecha_analisis)*1000 analysis_date,  UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 elaboration_date, UNIX_TIMESTAMP(m.fecha_vencimiento)*1000 due_date, UNIX_TIMESTAMP(m.fecha_recepcion)*1000 reception_date, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, IFNULL(m.clausula,"N/R") clause, m.cod_usuario creator, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
 		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, IFNULL(clausula,"N/A") clause, cantidad quantity, presentacion presentation FROM certificado'
 		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
@@ -868,8 +868,8 @@ function populateQualitrixRecords(qxdb, cb){
 								if(record.id == property.record){
 									_properties.push({
 										  property: property.property
-										, value: property.value
-										, creator: record.user
+										, value: property.value.trim()
+										, creator: record.creator
 										, modified: record.created
 										, modified: (new Date()).getTime()
 										, modifier: 0
@@ -888,17 +888,16 @@ function populateQualitrixRecords(qxdb, cb){
 								, due_date: record.due_date
 								, reception_date: record.reception_date
 								, properties: _properties
-								, user: record.user
 								, veredict: record.veredict
 								, remission: record.remission
 								, quantity: record.quantity
 								, existing_quantity: record.existing_quantity
 								, supplier: record.supplier
 								, satisfies: record.satisfies == 1
+								, clause: record.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").replace(' ertificado', ' certificado').trim()
 								, active: record.active == 1
-								, clause: ''
 								, created: record.created
-								, creator: record.user
+								, creator: record.creator
 								, modified: record.created
 								, modifier: 0
 								, deleted: false
