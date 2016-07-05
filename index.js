@@ -1027,6 +1027,7 @@ function populateQualitrixCertificate(qxdb, cb){
 									addToLog('      ...Se han obtenido '+_values.length+' valores de e-Register para el certificado '+item.id);
 									items.push({
 										id: item.id
+										, subsidiary: 1 //Barranquilla
 										, product: item.product
 										, customer: item.customer
 										, quantity: item.quantity
