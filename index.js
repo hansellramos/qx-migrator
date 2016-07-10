@@ -894,7 +894,6 @@ function populateQualitrixRecords(qxdb, cb){
 								, existing_quantity: record.existing_quantity
 								, supplier: record.supplier
 								, satisfies: record.satisfies == 1
-								, clause: record.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").replace(' ertificado', ' certificado').trim()
 								, active: record.active == 1
 								, created: record.created
 								, creator: record.creator
