@@ -16,6 +16,8 @@ var connectionParams = {
 	}
 };
 
+var leaderBarranquilla = 'Harley Benavides Henrriquez';
+
 var fs = require('fs');
 var mysql = require('mysql');
 var Db = require('mongodb').Db,
@@ -496,8 +498,9 @@ function populateQualitrixSubsidiary(qxdb, cb){
 		console.log(addToLog('    Insertando en tabla subsidiary...'));
 		qxdb.collection('subsidiary').insert({
 	        id: 1
-	        , name: 'Barranquilla'
+	        , name: 'PQP Barranquilla'
 	        , reference: '3'
+			, leader: leaderBarranquilla
 	        , active: true
 	        , created: (new Date()).getTime()
 	        , creator: 0
@@ -757,6 +760,8 @@ function populateQualitrixProducts(qxdb, cb){
 								, store: product.store
 								, name: product.name
 								, reference: product.reference
+								, max_dose: 'N/R'
+								, due_date: '0'
 								, notes: ''
 								, properties: _properties
 								, active: product.active == 1
@@ -1033,8 +1038,11 @@ function populateQualitrixCertificate(qxdb, cb){
 										, presentation: item.presentation
 										, remission: item.remission
 										, date: item.created
+										, elaboration_date: item.created
+										, due_date: 'N/R'
+										, max_dose: 'N/R'
 										, active: true
-										, clause: item.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim()
+										, clause: item.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim().replace(' ertificado', ' certificado')
 										, properties: _properties
 								        , values: _values
 										, creator: item.creator
