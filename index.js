@@ -1,7 +1,7 @@
 var log = "";
 var processDate = new Date();
 
-var connectionParams = {
+const connectionParams = {
 	eregister : {
 	  host     : 'localhost',
 	  port     : 3306,
@@ -23,6 +23,15 @@ var mysql = require('mysql');
 var Db = require('mongodb').Db,
     MongoClient = require('mongodb').MongoClient,
     Server = require('mongodb').Server;
+var crypto = require('crypto');
+
+const _privateKey = '3f25d2b96ea72d238ed7381c90b2123504c44792cbc28a1a3cd2e8b8d9ae2766';
+
+var getVerificationCode = function(object){
+	var _hash = crypto.createHmac('sha256', _privateKey);
+	var text = new Date().getTime()+"";
+	return _hash.update(text).digest('hex').substring(29,35);
+}
 
 var eregister = mysql.createConnection(connectionParams.eregister);
 
@@ -40,8 +49,8 @@ var queries = {
 		, external: 'SELECT c.cod_cliente id, c.nom_cliente name FROM clientes c UNION SELECT 1000+p.cod_proveedor id, p.nom_proveedor name FROM proveedores p'
 		, record: 'SELECT m.cod_muestra id, m.cod_producto product, m.lote reference, UNIX_TIMESTAMP(m.fecha_analisis)*1000 analysis_date,  UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 elaboration_date, UNIX_TIMESTAMP(m.fecha_vencimiento)*1000 due_date, UNIX_TIMESTAMP(m.fecha_recepcion)*1000 reception_date, m.desicion veredict, m.cumple satisfies, m.habil active, m.remision remission, m.cantidad quantity, m.cantidad_existente existing_quantity, 1000+m.cod_proveedor supplier, IFNULL(m.clausula,"N/R") clause, m.cod_usuario creator, UNIX_TIMESTAMP(m.fecha_elaboracion)*1000 created FROM muestras m'
 		, record_detail: 'SELECT dmp.cod_muestra record, dmp.cod_caracteristica property, dmp.valor value FROM detalle_muestra_producto dmp'
-		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, IFNULL(clausula,"N/A") clause, cantidad quantity, presentacion presentation FROM certificado'
-		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado'
+		, certificate: 'SELECT cod_certificado id, cod_cliente customer, cod_producto product, cod_usuario `creator`, UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(fecha,hora),"%d/%m/%Y%H:%i"))*1000 `created`, remision remission, IFNULL(clausula,"N/A") clause, cantidad quantity, presentacion presentation FROM certificado '
+		, certificate_properties: 'SELECT cod_certificado certificate, cod_encabezado id, replace(encabezado,"\r","") name FROM campos_certificado '
 		, certificate_values: 'SELECT cod_certificado certificate, cod_encabezado property, lote record, valor value FROM propiedad_certificado ORDER BY certificate, record '
 	}
 	, counters: {
@@ -1029,7 +1038,7 @@ function populateQualitrixCertificate(qxdb, cb){
 										values: _records
 								  	});	
 									addToLog('      ...Se han obtenido '+_values.length+' valores de e-Register para el certificado '+item.id);
-									items.push({
+									var _certificate = {
 										id: item.id
 										, subsidiary: 1 //Barranquilla
 										, product: item.product
@@ -1042,7 +1051,7 @@ function populateQualitrixCertificate(qxdb, cb){
 										, due_date: 'N/R'
 										, max_dose: 'N/R'
 										, active: true
-										, clause: item.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim().replace(' ertificado', ' certificado')
+										, clause: item.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim().replace(' ertificado', ' certificado').replace('null', '')
 										, properties: _properties
 								        , values: _values
 										, creator: item.creator
@@ -1051,7 +1060,9 @@ function populateQualitrixCertificate(qxdb, cb){
 										, modifier: 0
 										, deleted: false
 										, deleter: false
-									});
+									};
+									_certificate.verification = getVerificationCode(_certificate);
+									items.push(_certificate);
 								}
 								console.log(addToLog('      ...Relacion finalizada'));
 								writeLog();

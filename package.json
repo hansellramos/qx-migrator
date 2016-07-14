@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/hansellramos/qx-migrator#readme",
   "dependencies": {
+    "crypto": "0.0.3",
     "mongodb": "^2.1.19",
     "mysql": "^2.10.2"
   }
