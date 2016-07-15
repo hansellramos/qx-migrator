@@ -753,6 +753,7 @@ function populateQualitrixProducts(qxdb, cb){
 										, validations:{
 											type:'text'
 										}
+										, remission_editable: false
 										, active: true
 										, created: (new Date()).getTime()
 										, creator: 0
