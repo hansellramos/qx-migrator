@@ -749,7 +749,7 @@ function populateQualitrixProducts(qxdb, cb){
 								if(product.id == property.product){
 									_properties.push({
 										id:property.id
-										, name:property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim()
+										, name:property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").replace('+-','&plusmn;').trim()
 										, validations:{
 											type:'text'
 										}
