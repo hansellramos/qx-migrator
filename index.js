@@ -750,7 +750,7 @@ function populateQualitrixProducts(qxdb, cb){
 									_properties.push({
 										id:property.id
 										, name:property.name.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").replace('+-','&plusmn;').trim()
-										, validations:{
+										, validation:{
 											type:'text'
 										}
 										, remission_editable: false
@@ -771,7 +771,8 @@ function populateQualitrixProducts(qxdb, cb){
 								, name: product.name
 								, reference: product.reference
 								, max_dose: 'N/R'
-								, due_date: '0'
+								, due_date: 0
+								, certification_nsf: ''
 								, notes: ''
 								, properties: _properties
 								, active: product.active == 1
