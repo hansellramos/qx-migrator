@@ -801,7 +801,7 @@ function populateQualitrixProducts(qxdb, cb){
 								    	}else{
 								    		console.log(addToLog('    ...Indices creados exitosamente'));
 								    		console.log(addToLog('    Creando contadores en tabla profile...'));
-								    		eregister.query(queries.counters.profile
+								    		eregister.query(queries.counters.product
 							    			, function(error, results, fields){
 							    				if(error){
 						    						console.log(addToLog('    ...No se han podido obtener datos de e-Register. '+error));
