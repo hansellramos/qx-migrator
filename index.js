@@ -16,7 +16,16 @@ const connectionParams = {
 	}
 };
 
-var leaderBarranquilla = 'Harley Benavides Henrriquez';
+var leaders = [
+	{
+		date: 1405400400000,
+		name: 'Harley Benavides Henrriquez'
+	},
+	{
+		date: 0,
+		name: 'RenierGT'
+	}
+];
 
 var fs = require('fs');
 var mysql = require('mysql');
@@ -31,6 +40,15 @@ var getVerificationCode = function(object){
 	var _hash = crypto.createHmac('sha256', _privateKey);
 	var text = new Date().getTime()+"";
 	return _hash.update(text).digest('hex').substring(29,35);
+}
+
+var getLeader = function(date){
+	for(var i = 0;i<leaders.length;i++){
+		if(leaders[i].date<date){
+			return leaders[i].name;
+		}
+	}
+	return leaders[0].name;
 }
 
 var eregister = mysql.createConnection(connectionParams.eregister);
@@ -509,7 +527,7 @@ function populateQualitrixSubsidiary(qxdb, cb){
 	        id: 1
 	        , name: 'PQP Barranquilla'
 	        , reference: '3'
-			, leader: leaderBarranquilla
+			, leader: leaders[0].name
 	        , active: true
 	        , created: (new Date()).getTime()
 	        , creator: 0
@@ -1052,8 +1070,13 @@ function populateQualitrixCertificate(qxdb, cb){
 										, elaboration_date: item.created
 										, due_date: 'N/R'
 										, max_dose: 'N/R'
+										, leader: getLeader(item.created)
 										, active: true
-										, clause: item.clause.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"").trim().replace(' ertificado', ' certificado').replace('null', '')
+										, clause: item.clause
+											.replace(/(\\r)|((\<+\/*(html|HTML|head|HEAD|body|BODY|font|FONT)+([ a-zA-Z=\\"0-9]*)+\>))|( {2,})/g,"")
+											.replace(' ertificado', ' certificado')
+											.replace('null', '')
+											.trim()
 										, properties: _properties
 								        , values: _values
 										, creator: item.creator
