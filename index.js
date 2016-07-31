@@ -18,11 +18,13 @@ const connectionParams = {
 
 var leaders = [
 	{
-		date: 1405400400000,
+		date: (new Date(2014,6,15)).getTime(),
+		id: 44,
 		name: 'Harley Benavides Henrriquez'
 	},
 	{
 		date: 0,
+		id: 2,
 		name: 'RenierGT'
 	}
 ];
@@ -527,7 +529,7 @@ function populateQualitrixSubsidiary(qxdb, cb){
 	        id: 1
 	        , name: 'PQP Barranquilla'
 	        , reference: '3'
-			, leader: leaders[0].name
+			, leader: leaders[0].id
 	        , active: true
 	        , created: (new Date()).getTime()
 	        , creator: 0
