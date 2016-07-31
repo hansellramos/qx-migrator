@@ -44,7 +44,7 @@ var getVerificationCode = function(object){
 
 var getLeader = function(date){
 	for(var i = 0;i<leaders.length;i++){
-		if(leaders[i].date<date){
+		if(leaders[i].date<=date){
 			return leaders[i].name;
 		}
 	}
