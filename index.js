@@ -527,8 +527,8 @@ function populateQualitrixSubsidiary(qxdb, cb){
 		console.log(addToLog('    Insertando en tabla subsidiary...'));
 		qxdb.collection('subsidiary').insert({
 	        id: 1
-	        , name: 'PQP Barranquilla'
-	        , reference: '3'
+	        , name: 'Planta C'
+	        , reference: 'C'
 			, leader: leaders[0].id
 	        , active: true
 	        , created: (new Date()).getTime()
