@@ -581,7 +581,7 @@ function populateQualitrixSubsidiary(qxdb, cb){
 function populateQualitrixStore(qxdb, cb){
 	console.log(addToLog('  Iniciando Proceso store...'));
 	console.log(addToLog('    Consultando subsidiary Barranquilla...'));
-	qxdb.collection('subsidiary').findOne({reference:'3'}, function(error, subsidiary){
+	qxdb.collection('subsidiary').findOne({reference:'C'}, function(error, subsidiary){
 		if(error){
 			console.log(addToLog('    ...Error Consultando Subsidiary Barranquilla. '+error));
 			writeLog(function(){cb(error);});
