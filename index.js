@@ -123,7 +123,8 @@ var permissions = [
 	{ name:'User Deletion', reference: 'userDelete', description: 'Permite eliminar usuarios en el sistema' },
 	{ name:'Profile Deletion', reference: 'profileDelete', description: 'Permite eliminar perfiles en el sistema' },
 //Others
-	{ name:'Users reset password', reference: 'userResetPassword', description: 'Permite reiniciar la clave de los usuarios en el sistema' }
+	{ name:'Users reset password', reference: 'userResetPassword', description: 'Permite reiniciar la clave de los usuarios en el sistema' },
+	{ name:'Record import', reference: 'recordImport', description: 'permite importar masivamente registros al sistema' }
 ];
 
 function addToLog(string){
